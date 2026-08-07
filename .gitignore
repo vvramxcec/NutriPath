@@ -1,0 +1,28 @@
+# --- Environment / secrets ---
+.env
+.env.local
+*.key
+*.pem
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+tools/.venv/
+
+# --- Flutter / Dart ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+*.iml
+
+# --- Supabase ---
+supabase/.branches
+supabase/.temp/
+supabase/.env
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/

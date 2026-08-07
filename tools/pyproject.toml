@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nutripath-tools"
+version = "0.1.0"
+description = "NutriPath data import tooling — INDB xlsx → SQL migrations"
+requires-python = ">=3.12"
+dependencies = [
+    "openpyxl>=3.1",
+]
+
+[tool.setuptools]
+py-modules = []
