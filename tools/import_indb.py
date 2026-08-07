@@ -206,12 +206,9 @@ INSERT INTO food_items
    per_100g, serving_fallback)
 VALUES
 """
-    chunks = [foods[i:i + 250] for i in range(0, len(foods), 250)]
-    body: list[str] = []
-    for chunk in chunks:
-        body.append(",\n".join(render_values(f) for f in chunk) + "\n")
-    footer = "ON CONFLICT (food_code) DO NOTHING;\n"
-    return header + "\n".join(body) + footer
+    body = ",\n".join(render_values(f) for f in foods)
+    footer = "\nON CONFLICT (food_code) DO NOTHING;\n"
+    return header + body + footer
 
 
 def main() -> None:

@@ -2,8 +2,9 @@
  * NutriPath — generate-meal-plan edge function.
  *
  * Flow: load profile + conditions + rules (service role) → resolve strictest
- * limits → score every food → build prompt → call Claude (structured output) →
- * validate + assertMealSafe → persist meal_plans / meal_plan_items.
+ * limits → score every food → build prompt → call the LLM (Gemini by default,
+ * Claude if LLM_PROVIDER=anthropic) → validate + assertMealSafe → persist
+ * meal_plans / meal_plan_items.
  *
  * The rules layer ENFORCES (avoid/limit/pool); the LLM only proposes within the
  * allowed pool. Extensible: new conditions/limits = DB rows, no code change.
@@ -21,7 +22,7 @@ import {
   type Condition,
 } from "./_shared/rules.ts";
 import { buildPrompt } from "./_shared/prompt.ts";
-import { callClaude } from "./_shared/anthropic.ts";
+import { callLlm } from "./_shared/llm.ts";
 import {
   validatePlan,
   flattenItems,
@@ -195,21 +196,26 @@ Deno.serve(async (req) => {
       days,
     });
 
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-    const model = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-opus-5";
-
-    const claude = await callClaude({
-      apiKey,
-      model,
+    // Trim: keys pasted via shell frequently carry a trailing newline, which
+    // Anthropic rejects as an invalid x-api-key.
+    const llm = await callLlm({
       system,
       userMessage: `Generate a ${days}-day meal plan.`,
       schema: PLAN_SCHEMA,
-      maxTokens: 8000,
+      maxTokens: 16384,
     });
 
     // --- 7. validate + safety gate --------------------------------------------
-    const plan: MealPlanJSON = validatePlan(JSON.parse(claude.text));
+    let plan: MealPlanJSON;
+    try {
+      plan = validatePlan(JSON.parse(llm.text));
+    } catch {
+      throw new Error(
+        `LLM plan JSON was invalid (finish_reason: ${llm.stopReason}, ` +
+        `input_tokens: ${llm.inputTokens}, output_tokens: ${llm.outputTokens}). ` +
+        `Raw start: ${llm.text.slice(0, 600)}`,
+      );
+    }
     const items = flattenItems(plan);
     const safety = assertMealSafe(items, avoidSet, limitSet);
     if (!safety.safe) {
@@ -248,7 +254,7 @@ Deno.serve(async (req) => {
       status: "success",
       total_calories_kcal: totalKcal,
       generated_by: "hybrid",
-      model_name: claude.model,
+      model_name: llm.model,
       metadata: {
         summary: plan.summary,
         calorie_target: target,
@@ -272,8 +278,8 @@ Deno.serve(async (req) => {
         avoidCount: avoidSet.length,
         poolCount: pool.length,
       },
-      model: claude.model,
-      usage: { input_tokens: claude.inputTokens, output_tokens: claude.outputTokens },
+      model: llm.model,
+      usage: { input_tokens: llm.inputTokens, output_tokens: llm.outputTokens },
       safety,
     });
   } catch (err) {

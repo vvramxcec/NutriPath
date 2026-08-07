@@ -1,27 +1,12 @@
 /**
  * Claude API caller — raw fetch() to POST /v1/messages (no official Deno SDK).
- * Structured output via output_config.format.json_schema. Model defaults to
- * claude-opus-5 (overridable via the ANTHROPIC_MODEL secret).
+ * Structured output via output_config.format.json_schema. Used when
+ * LLM_PROVIDER=anthropic; otherwise the default is Gemini (see llm.ts).
  */
 
-export interface ClaudeCall {
-  apiKey: string;
-  model: string;
-  system: string;
-  userMessage: string;
-  schema: Record<string, unknown>;
-  maxTokens?: number;
-}
+import type { LlmCall, LlmResult } from "./llm.ts";
 
-export interface ClaudeResult {
-  text: string;
-  model: string;
-  stopReason: string | null;
-  inputTokens: number;
-  outputTokens: number;
-}
-
-export async function callClaude(call: ClaudeCall): Promise<ClaudeResult> {
+export async function callClaude(call: LlmCall): Promise<LlmResult> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
