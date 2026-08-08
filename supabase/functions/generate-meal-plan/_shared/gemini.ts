@@ -18,7 +18,7 @@ export async function callGemini(call: LlmCall): Promise<LlmResult> {
         system_instruction: { parts: [{ text: call.system }] },
         contents: [{ role: "user", parts: [{ text: call.userMessage }] }],
         generationConfig: {
-          maxOutputTokens: call.maxTokens ?? 8000,
+          maxOutputTokens: call.maxTokens ?? 16384,
           responseMimeType: "application/json",
           responseSchema: call.schema,
         },

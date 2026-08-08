@@ -26,8 +26,10 @@ class ProfileController extends AsyncNotifier<DemoProfile?> {
 
   @override
   Future<DemoProfile?> build() async {
+    print('[ProfileController] build() started');
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getString(_prefsKey);
+    print('[ProfileController] demo_profile_id=$id');
     if (id == null) return null;
 
     final client = ref.read(supabaseClientProvider);

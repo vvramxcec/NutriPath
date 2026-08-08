@@ -22,7 +22,11 @@ class NutriPathApp extends ConsumerWidget {
 
     final router = ref.watch(appRouterProvider);
     // Re-evaluate redirects whenever the profile (onboarded state) changes.
-    ref.listen(profileControllerProvider, (_, __) => router.refresh());
+    ref.listen(profileControllerProvider, (_, next) {
+      debugPrint('[AppShell] profile state -> isLoading=${next.isLoading} '
+          'hasValue=${next.hasValue} value=${next.valueOrNull}');
+      router.refresh();
+    });
 
     return MaterialApp.router(
       title: 'NutriPath',

@@ -23,7 +23,6 @@ class _GenerationScreenState extends ConsumerState<GenerationScreen> {
     'Building your personalized plan…',
   ];
 
-  bool _started = false;
   int _stageIndex = 0;
 
   @override
@@ -33,8 +32,7 @@ class _GenerationScreenState extends ConsumerState<GenerationScreen> {
   }
 
   Future<void> _start() async {
-    if (_started) return;
-    setState(() => _started = true);
+    setState(() => _stageIndex = 0);
     // rotate the staged messages while loading
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _stageIndex < _stages.length - 1) {

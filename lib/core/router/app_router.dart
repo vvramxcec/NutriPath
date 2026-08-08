@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,19 +16,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
-      final profile = ref.read(profileControllerProvider).valueOrNull;
+      final profileAsync = ref.read(profileControllerProvider);
+      final profile = profileAsync.valueOrNull;
       final location = state.matchedLocation;
 
-      if (profile == null) {
-        // still loading, or onboarded=false
-        if (location == '/splash' || location == '/onboarding') return null;
-        return location == '/' ? '/splash' : '/onboarding';
+      debugPrint('[Router] redirect location=$location '
+          'isLoading=${profileAsync.isLoading} '
+          'hasValue=${profileAsync.hasValue} '
+          'profile=$profile');
+
+      if (profile != null) {
+        // onboarded: only allow the app routes
+        if (location == '/' || location == '/splash' || location == '/onboarding') {
+          return '/dashboard';
+        }
+        return null;
       }
-      // onboarded: only allow the app routes
-      if (location == '/' || location == '/splash' || location == '/onboarding') {
-        return '/dashboard';
+
+      // No profile yet.
+      if (profileAsync.isLoading) {
+        // Still bootstrapping the demo profile from prefs → park on splash.
+        return location == '/splash' ? null : '/splash';
       }
-      return null;
+      // Loaded with no profile → not onboarded → onboarding.
+      return location == '/onboarding' ? null : '/onboarding';
     },
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),

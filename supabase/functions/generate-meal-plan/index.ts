@@ -177,6 +177,21 @@ Deno.serve(async (req) => {
     const foods = await loadAllFoods();
     const { avoidSet, limitSet, pool } = scoreAllFoods(foods, resolved, excludedTags);
 
+    // Cap the prompt-size pool: keep all "encourage" foods, then fill up to
+    // MAX_POOL with "ok" foods. Keeps the LLM input under ~20K tokens.
+    const MAX_POOL = 200;
+    let promptPool = pool;
+    if (pool.length > MAX_POOL) {
+      const encouraged = pool.filter((s) => s.verdict === "encourage");
+      const okPool = pool.filter((s) => s.verdict === "ok");
+      // Deterministic: sort by calorie density so the LLM always sees the
+      // same core set, making generation reproducible-ish.
+      okPool.sort((a, b) =>
+        (a.food.calories_per_serving_kcal ?? 0) - (b.food.calories_per_serving_kcal ?? 0)
+      );
+      promptPool = [...encouraged, ...okPool.slice(0, MAX_POOL - encouraged.length)];
+    }
+
     // --- 6. prompt + Claude ---------------------------------------------------
     const hasObesity = conditions.some((c) => c.slug === "obesity");
     const target = calorieTarget(profile, hasObesity);
@@ -192,7 +207,7 @@ Deno.serve(async (req) => {
       conditionNames: conditions.map((c) => c.name),
       restrictions: restrictions.map((r) => r.name),
       limits: resolved,
-      pool,
+      pool: promptPool,
       days,
     });
 
@@ -261,7 +276,8 @@ Deno.serve(async (req) => {
         days,
         avoid_count: avoidSet.length,
         limit_count: limitSet.length,
-        pool_count: pool.length,
+        full_pool_count: pool.length,
+        prompt_pool_count: promptPool.length,
         warnings: safety.warnings,
       },
       error_message: null,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_theme.dart';
 import 'models.dart';
@@ -21,6 +22,8 @@ class ProfileSetupStep extends StatefulWidget {
 }
 
 class _ProfileSetupStepState extends State<ProfileSetupStep> {
+  static const _uuid = Uuid();
+
   late final _name = TextEditingController(text: widget.initial?.displayName ?? '');
   late final _age = TextEditingController(text: widget.initial?.age?.toString() ?? '');
   late final _height = TextEditingController(text: widget.initial?.heightCm?.toString() ?? '');
@@ -46,7 +49,7 @@ class _ProfileSetupStepState extends State<ProfileSetupStep> {
 
   void _emit() {
     widget.onChanged(DemoProfile(
-      id: widget.initial?.id ?? 'draft',
+      id: widget.initial?.id ?? _uuid.v4(),
       displayName: _name.text.trim().isEmpty ? null : _name.text.trim(),
       age: int.tryParse(_age.text),
       sex: _sex,

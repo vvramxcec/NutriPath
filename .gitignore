@@ -16,6 +16,7 @@ tools/.venv/
 .flutter-plugins-dependencies
 build/
 *.iml
+android/local.properties
 
 # --- Supabase ---
 supabase/.branches
