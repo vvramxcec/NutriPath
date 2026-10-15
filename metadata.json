@@ -1,0 +1,6 @@
+{
+  "name": "NutriPath",
+  "description": "AI-powered personalized medical nutrition app with deterministic nutrient calculations and clinical safety validation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

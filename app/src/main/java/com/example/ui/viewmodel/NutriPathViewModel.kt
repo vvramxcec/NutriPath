@@ -1,0 +1,315 @@
+package com.example.ui.viewmodel
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.data.db.NutriPathDatabase
+import com.example.data.engine.MealRecommendationEngine
+import com.example.data.engine.MealSafetyValidator
+import com.example.data.model.HealthProfile
+import com.example.data.model.MealPlanEntity
+import com.example.data.model.Recipe
+import com.example.data.repository.HealthProfileRepository
+import com.example.data.repository.MealPlanRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+
+class NutriPathViewModel(application: Application) : AndroidViewModel(application) {
+
+  private val database = NutriPathDatabase.getDatabase(application)
+  private val healthProfileRepo = HealthProfileRepository(database.healthProfileDao())
+  private val mealPlanRepo = MealPlanRepository(database.mealPlanDao())
+
+  val healthProfile: StateFlow<HealthProfile> = healthProfileRepo.profileFlow
+    .stateIn(viewModelScope, SharingStarted.Eagerly, HealthProfile())
+
+  private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+  private val displayFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
+
+  private val _selectedDate = MutableStateFlow(dateFormat.format(Date()))
+  val selectedDate: StateFlow<String> = _selectedDate.asStateFlow()
+
+  val selectedDateDisplay: StateFlow<String> = _selectedDate.combine(MutableStateFlow(Unit)) { dateStr, _ ->
+    try {
+      val parsed = dateFormat.parse(dateStr)
+      if (parsed != null) displayFormat.format(parsed) else dateStr
+    } catch (e: Exception) {
+      dateStr
+    }
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Today")
+
+  // Current date's meals
+  val currentMeals: StateFlow<List<MealPlanEntity>> = _selectedDate
+    .flatMapLatest { date -> mealPlanRepo.getMealsForDate(date) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+  // All-time meal history
+  val mealHistory: StateFlow<List<MealPlanEntity>> = mealPlanRepo.getAllConsumedHistory()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+  // Consumed totals for selected date (Only meals marked 'CONSUMED' per PRD Section 4.3)
+  val consumedCalories: StateFlow<Float> = currentMeals.combine(MutableStateFlow(Unit)) { meals, _ ->
+    meals.filter { it.status == MealPlanEntity.STATUS_CONSUMED }.sumOf { it.caloriesKcal.toDouble() }.toFloat()
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+  val consumedProtein: StateFlow<Float> = currentMeals.combine(MutableStateFlow(Unit)) { meals, _ ->
+    meals.filter { it.status == MealPlanEntity.STATUS_CONSUMED }.sumOf { it.proteinGrams.toDouble() }.toFloat()
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+  val consumedCarbs: StateFlow<Float> = currentMeals.combine(MutableStateFlow(Unit)) { meals, _ ->
+    meals.filter { it.status == MealPlanEntity.STATUS_CONSUMED }.sumOf { it.carbsGrams.toDouble() }.toFloat()
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+  val consumedFat: StateFlow<Float> = currentMeals.combine(MutableStateFlow(Unit)) { meals, _ ->
+    meals.filter { it.status == MealPlanEntity.STATUS_CONSUMED }.sumOf { it.fatGrams.toDouble() }.toFloat()
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+  val consumedFiber: StateFlow<Float> = currentMeals.combine(MutableStateFlow(Unit)) { meals, _ ->
+    meals.filter { it.status == MealPlanEntity.STATUS_CONSUMED }.sumOf { it.fiberGrams.toDouble() }.toFloat()
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+  val consumedSodium: StateFlow<Float> = currentMeals.combine(MutableStateFlow(Unit)) { meals, _ ->
+    meals.filter { it.status == MealPlanEntity.STATUS_CONSUMED }.sumOf { it.sodiumMg.toDouble() }.toFloat()
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+  // Meal Generator State
+  private val _selectedGenerationType = MutableStateFlow(MealRecommendationEngine.getSuggestedMealTypeForCurrentTime())
+  val selectedGenerationType: StateFlow<String> = _selectedGenerationType.asStateFlow()
+
+  private val _generatedCandidates = MutableStateFlow<List<MealRecommendationEngine.RecommendedMealCandidate>>(emptyList())
+  val generatedCandidates: StateFlow<List<MealRecommendationEngine.RecommendedMealCandidate>> = _generatedCandidates.asStateFlow()
+
+  private val _fullDayPlan = MutableStateFlow<MealRecommendationEngine.FullDayMealPlan?>(null)
+  val fullDayPlan: StateFlow<MealRecommendationEngine.FullDayMealPlan?> = _fullDayPlan.asStateFlow()
+
+  private val _isGenerating = MutableStateFlow(false)
+  val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
+
+  init {
+    // Seed initial healthy plan if today is empty
+    viewModelScope.launch {
+      val today = dateFormat.format(Date())
+      val existing = database.healthProfileDao().getHealthProfileOnce()
+      if (existing == null) {
+        val initialProfile = HealthProfile()
+        healthProfileRepo.saveProfile(initialProfile)
+      }
+      seedInitialMealsIfEmpty(today)
+    }
+  }
+
+  private suspend fun seedInitialMealsIfEmpty(today: String) {
+    val existing = database.mealPlanDao().getMealsForDate(today)
+    // Check if empty and populate breakfast and lunch for rich first launch experience
+    val initialProfile = healthProfileRepo.getProfileOnce()
+    val fullPlan = MealRecommendationEngine.generateFullDayPlan(today, initialProfile)
+
+    val breakfast = MealPlanEntity(
+      date = today,
+      mealType = "Breakfast",
+      recipeId = fullPlan.breakfast.recipe.id,
+      recipeTitle = fullPlan.breakfast.recipe.title,
+      servings = 1.0f,
+      caloriesKcal = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.caloriesKcal,
+      proteinGrams = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.proteinGrams,
+      carbsGrams = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.carbsGrams,
+      fatGrams = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.fatGrams,
+      fiberGrams = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.fiberGrams,
+      sodiumMg = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.sodiumMg,
+      status = MealPlanEntity.STATUS_CONSUMED, // Mark breakfast logged
+      validationStatus = fullPlan.breakfast.validationResult.overallStatus.name,
+      suitabilityExplanation = fullPlan.breakfast.validationResult.suitabilityExplanation,
+      ingredientsSummary = fullPlan.breakfast.recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
+      instructionsSummary = fullPlan.breakfast.recipe.preparationSteps.joinToString(". ")
+    )
+
+    val lunch = MealPlanEntity(
+      date = today,
+      mealType = "Lunch",
+      recipeId = fullPlan.lunch.recipe.id,
+      recipeTitle = fullPlan.lunch.recipe.title,
+      servings = 1.0f,
+      caloriesKcal = fullPlan.lunch.recipe.calculatedNutrientsPerServing.caloriesKcal,
+      proteinGrams = fullPlan.lunch.recipe.calculatedNutrientsPerServing.proteinGrams,
+      carbsGrams = fullPlan.lunch.recipe.calculatedNutrientsPerServing.carbsGrams,
+      fatGrams = fullPlan.lunch.recipe.calculatedNutrientsPerServing.fatGrams,
+      fiberGrams = fullPlan.lunch.recipe.calculatedNutrientsPerServing.fiberGrams,
+      sodiumMg = fullPlan.lunch.recipe.calculatedNutrientsPerServing.sodiumMg,
+      status = MealPlanEntity.STATUS_CONSUMED, // Mark lunch logged
+      validationStatus = fullPlan.lunch.validationResult.overallStatus.name,
+      suitabilityExplanation = fullPlan.lunch.validationResult.suitabilityExplanation,
+      ingredientsSummary = fullPlan.lunch.recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
+      instructionsSummary = fullPlan.lunch.recipe.preparationSteps.joinToString(". ")
+    )
+
+    val dinner = MealPlanEntity(
+      date = today,
+      mealType = "Dinner",
+      recipeId = fullPlan.dinner.recipe.id,
+      recipeTitle = fullPlan.dinner.recipe.title,
+      servings = 1.0f,
+      caloriesKcal = fullPlan.dinner.recipe.calculatedNutrientsPerServing.caloriesKcal,
+      proteinGrams = fullPlan.dinner.recipe.calculatedNutrientsPerServing.proteinGrams,
+      carbsGrams = fullPlan.dinner.recipe.calculatedNutrientsPerServing.carbsGrams,
+      fatGrams = fullPlan.dinner.recipe.calculatedNutrientsPerServing.fatGrams,
+      fiberGrams = fullPlan.dinner.recipe.calculatedNutrientsPerServing.fiberGrams,
+      sodiumMg = fullPlan.dinner.recipe.calculatedNutrientsPerServing.sodiumMg,
+      status = MealPlanEntity.STATUS_PLANNED, // Planned dinner
+      validationStatus = fullPlan.dinner.validationResult.overallStatus.name,
+      suitabilityExplanation = fullPlan.dinner.validationResult.suitabilityExplanation,
+      ingredientsSummary = fullPlan.dinner.recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
+      instructionsSummary = fullPlan.dinner.recipe.preparationSteps.joinToString(". ")
+    )
+
+    mealPlanRepo.insertMeals(listOf(breakfast, lunch, dinner))
+  }
+
+  fun changeSelectedDate(offsetDays: Int) {
+    try {
+      val cal = Calendar.getInstance()
+      val current = dateFormat.parse(_selectedDate.value)
+      if (current != null) cal.time = current
+      cal.add(Calendar.DAY_OF_YEAR, offsetDays)
+      _selectedDate.value = dateFormat.format(cal.time)
+    } catch (e: Exception) {
+      _selectedDate.value = dateFormat.format(Date())
+    }
+  }
+
+  fun setSelectedDate(dateString: String) {
+    _selectedDate.value = dateString
+  }
+
+  fun setGenerationMealType(type: String) {
+    _selectedGenerationType.value = type
+    generateRecommendations(type)
+  }
+
+  fun generateRecommendations(mealType: String = _selectedGenerationType.value) {
+    viewModelScope.launch {
+      _isGenerating.value = true
+      val profile = healthProfile.value
+      if (mealType.equals("Full-Day Plan", ignoreCase = true)) {
+        val plan = MealRecommendationEngine.generateFullDayPlan(_selectedDate.value, profile)
+        _fullDayPlan.value = plan
+        _generatedCandidates.value = emptyList()
+      } else {
+        val list = MealRecommendationEngine.generateMealsForType(mealType, profile)
+        _generatedCandidates.value = list
+        _fullDayPlan.value = null
+      }
+      _isGenerating.value = false
+    }
+  }
+
+  fun saveCandidateToPlan(candidate: MealRecommendationEngine.RecommendedMealCandidate, targetDate: String = _selectedDate.value, asConsumed: Boolean = false) {
+    viewModelScope.launch {
+      val recipe = candidate.recipe
+      val entity = MealPlanEntity(
+        date = targetDate,
+        mealType = recipe.mealType,
+        recipeId = recipe.id,
+        recipeTitle = recipe.title,
+        servings = 1.0f,
+        caloriesKcal = recipe.calculatedNutrientsPerServing.caloriesKcal,
+        proteinGrams = recipe.calculatedNutrientsPerServing.proteinGrams,
+        carbsGrams = recipe.calculatedNutrientsPerServing.carbsGrams,
+        fatGrams = recipe.calculatedNutrientsPerServing.fatGrams,
+        fiberGrams = recipe.calculatedNutrientsPerServing.fiberGrams,
+        sodiumMg = recipe.calculatedNutrientsPerServing.sodiumMg,
+        status = if (asConsumed) MealPlanEntity.STATUS_CONSUMED else MealPlanEntity.STATUS_PLANNED,
+        validationStatus = candidate.validationResult.overallStatus.name,
+        suitabilityExplanation = candidate.validationResult.suitabilityExplanation,
+        ingredientsSummary = recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
+        instructionsSummary = recipe.preparationSteps.joinToString(". ")
+      )
+      mealPlanRepo.insertMeal(entity)
+    }
+  }
+
+  fun saveFullDayPlanToDate(plan: MealRecommendationEngine.FullDayMealPlan, targetDate: String = _selectedDate.value) {
+    viewModelScope.launch {
+      val items = listOf(
+        plan.breakfast to "Breakfast",
+        plan.lunch to "Lunch",
+        plan.dinner to "Dinner",
+        plan.snack to "Snack"
+      ).map { (cand, type) ->
+        val r = cand.recipe
+        MealPlanEntity(
+          date = targetDate,
+          mealType = type,
+          recipeId = r.id,
+          recipeTitle = r.title,
+          servings = 1.0f,
+          caloriesKcal = r.calculatedNutrientsPerServing.caloriesKcal,
+          proteinGrams = r.calculatedNutrientsPerServing.proteinGrams,
+          carbsGrams = r.calculatedNutrientsPerServing.carbsGrams,
+          fatGrams = r.calculatedNutrientsPerServing.fatGrams,
+          fiberGrams = r.calculatedNutrientsPerServing.fiberGrams,
+          sodiumMg = r.calculatedNutrientsPerServing.sodiumMg,
+          status = MealPlanEntity.STATUS_PLANNED,
+          validationStatus = cand.validationResult.overallStatus.name,
+          suitabilityExplanation = cand.validationResult.suitabilityExplanation,
+          ingredientsSummary = r.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
+          instructionsSummary = r.preparationSteps.joinToString(". ")
+        )
+      }
+      mealPlanRepo.insertMeals(items)
+    }
+  }
+
+  fun markMealConsumed(id: Long) {
+    viewModelScope.launch {
+      mealPlanRepo.markMealConsumed(id)
+    }
+  }
+
+  fun markMealPlanned(id: Long) {
+    viewModelScope.launch {
+      mealPlanRepo.markMealPlanned(id)
+    }
+  }
+
+  fun updateMealServings(meal: MealPlanEntity, newServings: Float) {
+    viewModelScope.launch {
+      val singleCal = meal.caloriesKcal / meal.servings
+      val singlePro = meal.proteinGrams / meal.servings
+      val singleCarb = meal.carbsGrams / meal.servings
+      val singleFat = meal.fatGrams / meal.servings
+      val singleSod = meal.sodiumMg / meal.servings
+      mealPlanRepo.updateServings(meal.id, newServings, singleCal, singlePro, singleCarb, singleFat, singleSod)
+    }
+  }
+
+  fun deleteMeal(id: Long) {
+    viewModelScope.launch {
+      mealPlanRepo.deleteMeal(id)
+    }
+  }
+
+  fun saveProfile(profile: HealthProfile) {
+    viewModelScope.launch {
+      healthProfileRepo.saveProfile(profile)
+      // When profile changes, re-evaluate recommendation list if active
+      generateRecommendations(_selectedGenerationType.value)
+    }
+  }
+
+  fun clearAllData() {
+    viewModelScope.launch {
+      mealPlanRepo.clearAll()
+      healthProfileRepo.resetProfile()
+    }
+  }
+}
