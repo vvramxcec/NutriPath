@@ -10,7 +10,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,21 +36,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.screens.HealthProfileScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.MealGeneratorScreen
 import com.example.ui.screens.MealHistoryScreen
 import com.example.ui.screens.MealPlannerScreen
+import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.SettingsSafetyScreen
 import com.example.ui.theme.DarkCharcoalText
 import com.example.ui.theme.DeepTealContainer
-import com.example.ui.theme.DeepTealDark
 import com.example.ui.theme.DeepTealPrimary
 import com.example.ui.theme.LimeYellowBackground
 import com.example.ui.theme.MyApplicationTheme
@@ -84,9 +83,29 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NutriPathApp(viewModel: NutriPathViewModel) {
+  val isOnboardingActive by viewModel.isOnboardingActive.collectAsStateWithLifecycle()
+  val profile by viewModel.healthProfile.collectAsStateWithLifecycle()
+
   var currentTab by remember { mutableStateOf(NutriPathTab.HOME) }
   var isGeneratorOpen by remember { mutableStateOf(false) }
   var initialGeneratorMealType by remember { mutableStateOf<String?>(null) }
+
+  // If in onboarding, show full-screen onboarding experience
+  if (isOnboardingActive) {
+    OnboardingScreen(
+      initialProfile = profile,
+      onCompleteOnboarding = { finishedProfile ->
+        viewModel.completeOnboarding(finishedProfile)
+      },
+      onSkipToDefaults = {
+        viewModel.dismissOnboarding()
+      },
+      modifier = Modifier
+        .fillMaxSize()
+        .windowInsetsPadding(WindowInsets.statusBars)
+    )
+    return
+  }
 
   // Handle Android hardware/gesture back press
   BackHandler(enabled = isGeneratorOpen || currentTab != NutriPathTab.HOME) {
@@ -177,13 +196,15 @@ fun NutriPathApp(viewModel: NutriPathViewModel) {
               }
             )
             NutriPathTab.PROFILE -> HealthProfileScreen(
-              viewModel = viewModel
+              viewModel = viewModel,
+              onLaunchOnboarding = { viewModel.restartOnboarding() }
             )
             NutriPathTab.HISTORY -> MealHistoryScreen(
               viewModel = viewModel
             )
             NutriPathTab.SETTINGS -> SettingsSafetyScreen(
-              viewModel = viewModel
+              viewModel = viewModel,
+              onLaunchOnboarding = { viewModel.restartOnboarding() }
             )
           }
         }

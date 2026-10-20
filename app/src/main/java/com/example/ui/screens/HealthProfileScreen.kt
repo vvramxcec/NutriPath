@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,9 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.HealthAndSafety
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,6 +34,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
@@ -41,8 +44,6 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,13 +59,19 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.HealthProfile
 import com.example.data.model.MedicalConditionCatalog
-import com.example.ui.theme.BorderSubtle
+import com.example.ui.theme.AllergyUnselectedBg
+import com.example.ui.theme.AllergyUnselectedBorder
+import com.example.ui.theme.AllergyUnselectedText
+import com.example.ui.theme.CardBorder
+import com.example.ui.theme.ChipUnselectedBg
+import com.example.ui.theme.ChipUnselectedBorder
+import com.example.ui.theme.ChipUnselectedText
 import com.example.ui.theme.DarkCharcoalText
 import com.example.ui.theme.DeepTealDark
 import com.example.ui.theme.DeepTealPrimary
 import com.example.ui.theme.LimeYellowAccent
 import com.example.ui.theme.LimeYellowBackground
-import com.example.ui.theme.StatusApprovedGreen
+import com.example.ui.theme.StatusRejectedRed
 import com.example.ui.theme.StatusWarningAmber
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.WarmWhiteCard
@@ -75,6 +82,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HealthProfileScreen(
   viewModel: NutriPathViewModel,
+  onLaunchOnboarding: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val originalProfile by viewModel.healthProfile.collectAsStateWithLifecycle()
@@ -89,6 +97,7 @@ fun HealthProfileScreen(
   var selectedConditions by remember(originalProfile) { mutableStateOf(originalProfile.medicalConditions.toSet()) }
   var selectedAllergies by remember(originalProfile) { mutableStateOf(originalProfile.allergies.toSet()) }
   var dietaryPreference by remember(originalProfile) { mutableStateOf(originalProfile.dietaryPreference) }
+  var nutritionGoal by remember(originalProfile) { mutableStateOf(originalProfile.nutritionGoal) }
 
   var dailyCaloriesText by remember(originalProfile) { mutableStateOf(originalProfile.dailyCalorieTarget.toString()) }
   var maxSodiumText by remember(originalProfile) { mutableStateOf(originalProfile.maxSodiumMg.toString()) }
@@ -97,6 +106,18 @@ fun HealthProfileScreen(
 
   val snackbarHostState = remember { SnackbarHostState() }
   val scope = rememberCoroutineScope()
+
+  val textFieldColors = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = DarkCharcoalText,
+    unfocusedTextColor = DarkCharcoalText,
+    focusedLabelColor = DeepTealDark,
+    unfocusedLabelColor = DarkCharcoalText.copy(alpha = 0.8f),
+    focusedBorderColor = DeepTealPrimary,
+    unfocusedBorderColor = CardBorder,
+    focusedContainerColor = Color(0xFFFAFCF7),
+    unfocusedContainerColor = Color(0xFFFAFCF7),
+    cursorColor = DeepTealPrimary
+  )
 
   Box(modifier = modifier.fillMaxSize()) {
     LazyColumn(
@@ -107,93 +128,164 @@ fun HealthProfileScreen(
       contentPadding = PaddingValues(16.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      // 1. Header Card
+      // 1. Header Card with Restart Onboarding button
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
           modifier = Modifier.fillMaxWidth()
         ) {
-          Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Box(
-              modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(LimeYellowBackground),
-              contentAlignment = Alignment.Center
+          Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
             ) {
-              Icon(Icons.Default.HealthAndSafety, contentDescription = null, tint = DeepTealPrimary, modifier = Modifier.size(24.dp))
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                  modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(LimeYellowBackground),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.HealthAndSafety,
+                    contentDescription = null,
+                    tint = DeepTealDark,
+                    modifier = Modifier.size(26.dp)
+                  )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                  Text(
+                    text = "Health Profile",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkCharcoalText
+                  )
+                  Text(
+                    text = "Controls clinical rules & recommendations",
+                    fontSize = 13.sp,
+                    color = TextMuted,
+                    fontWeight = FontWeight.Medium
+                  )
+                }
+              }
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-              Text("Personal Health Profile", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-              Text("Underpins all meal safety rules and nutritional targets", fontSize = 12.sp, color = TextMuted)
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            OutlinedButton(
+              onClick = onLaunchOnboarding,
+              modifier = Modifier
+                .fillMaxWidth()
+                .testTag("launch_onboarding_btn"),
+              shape = RoundedCornerShape(12.dp),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = DeepTealDark),
+              border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(DeepTealPrimary))
+            ) {
+              Icon(imageVector = Icons.Default.RestartAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+              Spacer(modifier = Modifier.width(8.dp))
+              Text("Run Step-by-Step Onboarding Wizard", fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
           }
         }
       }
 
-      // 2. Body Metrics
+      // 2. Body Metrics & Demographics
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
           modifier = Modifier.fillMaxWidth()
         ) {
-          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Body Measurements & Demographics", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
+          Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+          ) {
+            Text(
+              text = "Personal Metrics",
+              fontSize = 16.sp,
+              fontWeight = FontWeight.Bold,
+              color = DarkCharcoalText
+            )
 
             OutlinedTextField(
               value = name,
               onValueChange = { name = it },
-              label = { Text("Full Name / Label") },
+              label = { Text("Full Name / Label", fontWeight = FontWeight.SemiBold) },
               modifier = Modifier.fillMaxWidth().testTag("profile_name_input"),
-              colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = DeepTealPrimary)
+              colors = textFieldColors,
+              shape = RoundedCornerShape(12.dp)
             )
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
               OutlinedTextField(
                 value = ageText,
                 onValueChange = { ageText = it },
-                label = { Text("Age (yrs)") },
+                label = { Text("Age (yrs)", fontWeight = FontWeight.SemiBold) },
                 modifier = Modifier.weight(1f).testTag("profile_age_input"),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = DeepTealPrimary)
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
               )
               OutlinedTextField(
                 value = weightText,
                 onValueChange = { weightText = it },
-                label = { Text("Weight (kg)") },
+                label = { Text("Weight (kg)", fontWeight = FontWeight.SemiBold) },
                 modifier = Modifier.weight(1f).testTag("profile_weight_input"),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = DeepTealPrimary)
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
               )
               OutlinedTextField(
                 value = heightText,
                 onValueChange = { heightText = it },
-                label = { Text("Height (cm)") },
+                label = { Text("Height (cm)", fontWeight = FontWeight.SemiBold) },
                 modifier = Modifier.weight(1f).testTag("profile_height_input"),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = DeepTealPrimary)
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
               )
             }
 
-            Text("Activity Level:", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = DarkCharcoalText)
+            Text(
+              text = "Activity Level:",
+              fontSize = 14.sp,
+              fontWeight = FontWeight.Bold,
+              color = DarkCharcoalText
+            )
+
             FlowRow(
-              horizontalArrangement = Arrangement.spacedBy(6.dp),
-              verticalArrangement = Arrangement.spacedBy(6.dp)
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
               MedicalConditionCatalog.ACTIVITY_LEVELS.forEach { level ->
+                val isSelected = (activityLevel == level)
                 FilterChip(
-                  selected = activityLevel == level,
+                  selected = isSelected,
                   onClick = { activityLevel = level },
-                  label = { Text(level, fontSize = 12.sp) },
+                  label = {
+                    Text(
+                      text = level,
+                      fontSize = 13.sp,
+                      fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                    )
+                  },
                   colors = FilterChipDefaults.filterChipColors(
+                    containerColor = ChipUnselectedBg,
+                    labelColor = ChipUnselectedText,
                     selectedContainerColor = DeepTealPrimary,
                     selectedLabelColor = Color.White
-                  )
+                  ),
+                  border = BorderStroke(
+                    width = if (isSelected) 1.5.dp else 1.dp,
+                    color = if (isSelected) DeepTealDark else ChipUnselectedBorder
+                  ),
+                  shape = RoundedCornerShape(10.dp)
                 )
               }
             }
@@ -201,23 +293,33 @@ fun HealthProfileScreen(
         }
       }
 
-      // 3. Medical Conditions Controlled Catalogue
+      // 3. Medical Conditions
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
           modifier = Modifier.fillMaxWidth()
         ) {
-          Column(modifier = Modifier.padding(16.dp)) {
-            Text("Medical Conditions (Controlled List)", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
+          Column(modifier = Modifier.padding(18.dp)) {
+            Text(
+              text = "Diagnosed Medical Conditions",
+              fontSize = 16.sp,
+              fontWeight = FontWeight.Bold,
+              color = DarkCharcoalText
+            )
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Select all diagnosed conditions. Each activates reviewed clinical safety rules.", fontSize = 11.sp, color = TextMuted)
-            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+              text = "Selecting a condition activates reviewed deterministic clinical dietary rules for every meal proposal.",
+              fontSize = 13.sp,
+              color = TextMuted,
+              lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             FlowRow(
-              horizontalArrangement = Arrangement.spacedBy(6.dp),
-              verticalArrangement = Arrangement.spacedBy(6.dp)
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
               MedicalConditionCatalog.AVAILABLE_CONDITIONS.forEach { condition ->
                 val isSelected = selectedConditions.contains(condition)
@@ -226,14 +328,59 @@ fun HealthProfileScreen(
                   onClick = {
                     selectedConditions = if (isSelected) selectedConditions - condition else selectedConditions + condition
                   },
-                  label = { Text(condition, fontSize = 12.sp) },
-                  leadingIcon = if (isSelected) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) } } else null,
+                  label = {
+                    Text(
+                      text = condition,
+                      fontSize = 13.sp,
+                      fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                    )
+                  },
+                  leadingIcon = if (isSelected) {
+                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White) }
+                  } else null,
                   colors = FilterChipDefaults.filterChipColors(
+                    containerColor = ChipUnselectedBg,
+                    labelColor = ChipUnselectedText,
                     selectedContainerColor = DeepTealPrimary,
                     selectedLabelColor = Color.White
                   ),
+                  border = BorderStroke(
+                    width = if (isSelected) 1.5.dp else 1.dp,
+                    color = if (isSelected) DeepTealDark else ChipUnselectedBorder
+                  ),
+                  shape = RoundedCornerShape(10.dp),
                   modifier = Modifier.testTag("chip_condition_${condition.lowercase().take(6)}")
                 )
+              }
+            }
+
+            if (selectedConditions.isNotEmpty()) {
+              Spacer(modifier = Modifier.height(14.dp))
+              Text(
+                text = "Active Clinical Rules for Your Conditions:",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = DeepTealDark
+              )
+              Spacer(modifier = Modifier.height(6.dp))
+              selectedConditions.forEach { cond ->
+                val desc = MedicalConditionCatalog.CONDITION_DESCRIPTIONS[cond] ?: "Enforces clinical dietary bounds."
+                Box(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 3.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF3F8F2))
+                    .border(1.dp, Color(0xFFD4E2D0), RoundedCornerShape(8.dp))
+                    .padding(8.dp)
+                ) {
+                  Text(
+                    text = "• $cond: $desc",
+                    fontSize = 12.sp,
+                    color = DarkCharcoalText,
+                    lineHeight = 16.sp
+                  )
+                }
               }
             }
           }
@@ -245,18 +392,33 @@ fun HealthProfileScreen(
         Card(
           shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
           modifier = Modifier.fillMaxWidth()
         ) {
-          Column(modifier = Modifier.padding(16.dp)) {
-            Text("Food Allergies & Intolerances", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
+          Column(modifier = Modifier.padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(Icons.Default.Warning, contentDescription = null, tint = StatusRejectedRed, modifier = Modifier.size(18.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = "Critical Food Allergies",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkCharcoalText
+              )
+            }
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Ingredients matching these allergies will be strictly BLOCKED.", fontSize = 11.sp, color = StatusWarningAmber)
-            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+              text = "Recipes containing any selected allergen are strictly BLOCKED by Rule-ALLERG-v1.2.",
+              fontSize = 13.sp,
+              color = StatusRejectedRed,
+              fontWeight = FontWeight.Medium,
+              lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             FlowRow(
-              horizontalArrangement = Arrangement.spacedBy(6.dp),
-              verticalArrangement = Arrangement.spacedBy(6.dp)
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
               MedicalConditionCatalog.AVAILABLE_ALLERGIES.forEach { allergy ->
                 val isSelected = selectedAllergies.contains(allergy)
@@ -265,12 +427,27 @@ fun HealthProfileScreen(
                   onClick = {
                     selectedAllergies = if (isSelected) selectedAllergies - allergy else selectedAllergies + allergy
                   },
-                  label = { Text(allergy, fontSize = 12.sp) },
-                  leadingIcon = if (isSelected) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) } } else null,
+                  label = {
+                    Text(
+                      text = allergy,
+                      fontSize = 13.sp,
+                      fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                    )
+                  },
+                  leadingIcon = if (isSelected) {
+                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White) }
+                  } else null,
                   colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Color(0xFFDC2626),
+                    containerColor = AllergyUnselectedBg,
+                    labelColor = AllergyUnselectedText,
+                    selectedContainerColor = StatusRejectedRed,
                     selectedLabelColor = Color.White
                   ),
+                  border = BorderStroke(
+                    width = if (isSelected) 1.5.dp else 1.dp,
+                    color = if (isSelected) Color(0xFF7F1D1D) else AllergyUnselectedBorder
+                  ),
+                  shape = RoundedCornerShape(10.dp),
                   modifier = Modifier.testTag("chip_allergy_${allergy.lowercase().take(6)}")
                 )
               }
@@ -284,26 +461,51 @@ fun HealthProfileScreen(
         Card(
           shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
           modifier = Modifier.fillMaxWidth()
         ) {
-          Column(modifier = Modifier.padding(16.dp)) {
-            Text("Dietary & Culinary Preference", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-            Spacer(modifier = Modifier.height(8.dp))
+          Column(modifier = Modifier.padding(18.dp)) {
+            Text(
+              text = "Dietary & Culinary Preference",
+              fontSize = 16.sp,
+              fontWeight = FontWeight.Bold,
+              color = DarkCharcoalText
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+              text = "Tailors recipe generation to your regional cultural cuisine and culinary choices.",
+              fontSize = 13.sp,
+              color = TextMuted
+            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             FlowRow(
-              horizontalArrangement = Arrangement.spacedBy(6.dp),
-              verticalArrangement = Arrangement.spacedBy(6.dp)
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
               MedicalConditionCatalog.DIETARY_PREFERENCES.forEach { pref ->
+                val isSelected = (dietaryPreference == pref)
                 FilterChip(
-                  selected = dietaryPreference == pref,
+                  selected = isSelected,
                   onClick = { dietaryPreference = pref },
-                  label = { Text(pref, fontSize = 12.sp) },
+                  label = {
+                    Text(
+                      text = pref,
+                      fontSize = 13.sp,
+                      fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                    )
+                  },
                   colors = FilterChipDefaults.filterChipColors(
+                    containerColor = ChipUnselectedBg,
+                    labelColor = ChipUnselectedText,
                     selectedContainerColor = DeepTealPrimary,
                     selectedLabelColor = Color.White
-                  )
+                  ),
+                  border = BorderStroke(
+                    width = if (isSelected) 1.5.dp else 1.dp,
+                    color = if (isSelected) DeepTealDark else ChipUnselectedBorder
+                  ),
+                  shape = RoundedCornerShape(10.dp)
                 )
               }
             }
@@ -311,80 +513,106 @@ fun HealthProfileScreen(
         }
       }
 
-      // 6. Clinician Nutrient Targets & Clinical Notes
+      // 6. Clinician Nutrient Targets & Notes
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
           modifier = Modifier.fillMaxWidth()
         ) {
-          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Clinician-Provided Targets & Limits", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
+          Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+          ) {
+            Text(
+              text = "Clinician-Provided Targets & Limits",
+              fontSize = 16.sp,
+              fontWeight = FontWeight.Bold,
+              color = DarkCharcoalText
+            )
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
               OutlinedTextField(
                 value = dailyCaloriesText,
                 onValueChange = { dailyCaloriesText = it },
-                label = { Text("Daily Cal Target") },
+                label = { Text("Daily Cal Target (kcal)", fontWeight = FontWeight.SemiBold) },
                 modifier = Modifier.weight(1f),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = DeepTealPrimary)
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
               )
               OutlinedTextField(
                 value = maxSodiumText,
                 onValueChange = { maxSodiumText = it },
-                label = { Text("Max Sodium (mg)") },
+                label = { Text("Max Sodium (mg)", fontWeight = FontWeight.SemiBold) },
                 modifier = Modifier.weight(1f),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = DeepTealPrimary)
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
               )
             }
 
             OutlinedTextField(
               value = clinicianNotes,
               onValueChange = { clinicianNotes = it },
-              label = { Text("Clinician Dietary Notes / Advice") },
+              label = { Text("Clinician Dietary Notes / Instructions", fontWeight = FontWeight.SemiBold) },
               modifier = Modifier.fillMaxWidth(),
               maxLines = 3,
-              colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = DeepTealPrimary)
+              colors = textFieldColors,
+              shape = RoundedCornerShape(12.dp)
             )
           }
         }
       }
 
-      // 7. Privacy & Explicit Health Data Consent (PRD 11)
+      // 7. Privacy & Explicit Health Data Consent (PRD Section 11)
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
           modifier = Modifier.fillMaxWidth()
         ) {
-          Column(modifier = Modifier.padding(16.dp)) {
+          Column(modifier = Modifier.padding(18.dp)) {
             Row(
               modifier = Modifier.fillMaxWidth(),
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically
             ) {
               Column(modifier = Modifier.weight(1f)) {
-                Text("Health Information Consent", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
                 Text(
-                  "I consent to processing health conditions strictly for offline nutrition validation & meal generation.",
-                  fontSize = 11.sp,
+                  text = "Explicit Health Information Consent",
+                  fontSize = 15.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = DarkCharcoalText
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                  text = "I consent to processing health conditions strictly for offline nutrition validation & personalized meal generation. Health data is never sold or used for public AI training.",
+                  fontSize = 13.sp,
                   color = TextMuted,
-                  lineHeight = 15.sp
+                  lineHeight = 18.sp
                 )
               }
+              Spacer(modifier = Modifier.width(12.dp))
               Switch(
                 checked = consentGiven,
                 onCheckedChange = { consentGiven = it },
-                colors = SwitchDefaults.colors(checkedThumbColor = DeepTealPrimary, checkedTrackColor = DeepTealDark)
+                colors = SwitchDefaults.colors(
+                  checkedThumbColor = Color.White,
+                  checkedTrackColor = DeepTealPrimary,
+                  uncheckedThumbColor = Color.White,
+                  uncheckedTrackColor = Color(0xFFBDC8B8)
+                )
               )
             }
           }
         }
       }
 
-      // 8. Save Changes Button
+      // 8. Save Button
       item {
         Button(
           onClick = {
@@ -404,27 +632,30 @@ fun HealthProfileScreen(
               medicalConditions = selectedConditions.toList(),
               allergies = selectedAllergies.toList(),
               dietaryPreference = dietaryPreference,
+              nutritionGoal = nutritionGoal,
               dailyCalorieTarget = parsedCal,
               maxSodiumMg = parsedSod,
               clinicianNotes = clinicianNotes,
-              consentGiven = consentGiven
+              consentGiven = consentGiven,
+              hasCompletedOnboarding = true
             )
 
             viewModel.saveProfile(updated)
             scope.launch {
-              snackbarHostState.showSnackbar("Health profile updated! Safety rules re-synchronized.")
+              snackbarHostState.showSnackbar("Health profile saved! Safety validator re-synchronized.")
             }
           },
           modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(54.dp)
             .testTag("save_profile_button"),
           colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary),
-          shape = RoundedCornerShape(14.dp)
+          shape = RoundedCornerShape(14.dp),
+          elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
         ) {
-          Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+          Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.White)
           Spacer(modifier = Modifier.width(8.dp))
-          Text("Save & Apply Health Profile", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+          Text("Save & Apply Health Profile", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
       }
 

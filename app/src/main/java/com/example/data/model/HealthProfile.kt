@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 /**
  * Health profile representing user health parameters, medical conditions,
- * food allergies, dietary restrictions, and clinical nutrient targets.
+ * food allergies, dietary restrictions, clinical nutrient targets, and onboarding state.
  */
 @Entity(tableName = "health_profile")
 data class HealthProfile(
@@ -29,6 +29,7 @@ data class HealthProfile(
   val fatTargetG: Int = 55,
   val maxSodiumMg: Int = 1500,
   val consentGiven: Boolean = true,
+  val hasCompletedOnboarding: Boolean = false,
   val lastUpdatedMillis: Long = System.currentTimeMillis()
 )
 
@@ -40,6 +41,15 @@ object MedicalConditionCatalog {
     "High Cholesterol / Hyperlipidemia",
     "Celiac Disease",
     "GERD / Acid Reflux"
+  )
+
+  val CONDITION_DESCRIPTIONS = mapOf(
+    "Diabetes Type 2" to "Enforces low glycemic load, restricts simple sugars (< 10g), promotes soluble fiber (Matta rice, oats).",
+    "Hypertension" to "Limits daily sodium strictly to 1500mg (DASH protocol) and reduces seasoning salts.",
+    "Chronic Kidney Disease (CKD)" to "Moderates protein allowance (< 20g/meal) and monitors potassium/phosphorus loads.",
+    "High Cholesterol / Hyperlipidemia" to "Restricts saturated fatty acids (< 4.5g/serving) and prioritizes monounsaturated olive fats.",
+    "Celiac Disease" to "Strict 100% zero-gluten protocol; eliminates all wheat, barley, and semolina ingredients.",
+    "GERD / Acid Reflux" to "Eliminates high-acidity raw tomatoes and excessive fiery culinary irritants."
   )
 
   val AVAILABLE_ALLERGIES = listOf(
@@ -69,5 +79,13 @@ object MedicalConditionCatalog {
     "Lightly Active",
     "Moderately Active",
     "Very Active"
+  )
+
+  val NUTRITION_GOALS = listOf(
+    "Blood Sugar Stability & BP Control",
+    "Weight Management & Calorie Deficit",
+    "Heart Health & Cholesterol Reduction",
+    "Renal Protection & Moderate Protein",
+    "General Vitality & Clean Eating"
   )
 }

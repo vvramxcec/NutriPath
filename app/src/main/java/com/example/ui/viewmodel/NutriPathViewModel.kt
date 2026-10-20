@@ -95,14 +95,19 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
   private val _isGenerating = MutableStateFlow(false)
   val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
 
+  private val _isOnboardingActive = MutableStateFlow(false)
+  val isOnboardingActive: StateFlow<Boolean> = _isOnboardingActive.asStateFlow()
+
   init {
-    // Seed initial healthy plan if today is empty
     viewModelScope.launch {
       val today = dateFormat.format(Date())
       val existing = database.healthProfileDao().getHealthProfileOnce()
       if (existing == null) {
-        val initialProfile = HealthProfile()
+        val initialProfile = HealthProfile(hasCompletedOnboarding = false)
         healthProfileRepo.saveProfile(initialProfile)
+        _isOnboardingActive.value = true
+      } else {
+        _isOnboardingActive.value = !existing.hasCompletedOnboarding
       }
       seedInitialMealsIfEmpty(today)
     }
@@ -306,10 +311,38 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
     }
   }
 
+  fun completeOnboarding(profile: HealthProfile) {
+    viewModelScope.launch {
+      val finished = profile.copy(hasCompletedOnboarding = true)
+      healthProfileRepo.saveProfile(finished)
+      _isOnboardingActive.value = false
+      val today = dateFormat.format(Date())
+      // Regenerate today's meals tailored to new health profile
+      database.mealPlanDao().deleteMealForDateAndType(today, "Breakfast")
+      database.mealPlanDao().deleteMealForDateAndType(today, "Lunch")
+      database.mealPlanDao().deleteMealForDateAndType(today, "Dinner")
+      seedInitialMealsIfEmpty(today)
+      generateRecommendations()
+    }
+  }
+
+  fun restartOnboarding() {
+    _isOnboardingActive.value = true
+  }
+
+  fun dismissOnboarding() {
+    viewModelScope.launch {
+      val current = healthProfile.value
+      healthProfileRepo.saveProfile(current.copy(hasCompletedOnboarding = true))
+      _isOnboardingActive.value = false
+    }
+  }
+
   fun clearAllData() {
     viewModelScope.launch {
       mealPlanRepo.clearAll()
       healthProfileRepo.resetProfile()
+      _isOnboardingActive.value = true
     }
   }
 }

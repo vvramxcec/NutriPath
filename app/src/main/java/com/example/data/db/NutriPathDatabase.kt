@@ -10,7 +10,7 @@ import com.example.data.model.MealPlanEntity
 
 @Database(
   entities = [HealthProfile::class, MealPlanEntity::class],
-  version = 1,
+  version = 2,
   exportSchema = false
 )
 @TypeConverters(Converters::class)

@@ -15,9 +15,21 @@ val DeepTealOnContainer = Color(0xFF042F30)
 val WarmWhiteCard = Color(0xFFFFFFFF)
 val WarmWhiteCardSubtle = Color(0xFFF9FAF4)
 
-val DarkCharcoalText = Color(0xFF191D1B)
-val TextMuted = Color(0xFF56615D)
-val BorderSubtle = Color(0xFFE2E7DB)
+// High-contrast, crystal-clear text colors (WCAG AAA compliant)
+val DarkCharcoalText = Color(0xFF111815)
+val TextMuted = Color(0xFF2E3834)
+val TextSecondary = Color(0xFF404D48)
+val BorderSubtle = Color(0xFFCFD7C8)
+val CardBorder = Color(0xFFBCCBB6)
+
+// Chip styling tokens for maximum readability
+val ChipUnselectedBg = Color(0xFFF1F6EC)
+val ChipUnselectedBorder = Color(0xFFBCCBB6)
+val ChipUnselectedText = Color(0xFF14201B)
+
+val AllergyUnselectedBg = Color(0xFFFFF1F2)
+val AllergyUnselectedBorder = Color(0xFFFECDD3)
+val AllergyUnselectedText = Color(0xFF9F1239)
 
 // Status colors
 val StatusApprovedGreen = Color(0xFF15803D)
