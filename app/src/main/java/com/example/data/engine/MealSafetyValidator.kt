@@ -82,15 +82,24 @@ object MealSafetyValidator {
     var allergenViolationFound: String? = null
     for (ingredientItem in recipe.ingredients) {
       val food = FoodCompositionRepository.getIngredient(ingredientItem.ingredientId)
-      if (food != null) {
-        for (allergy in profile.allergies) {
-          if (food.allergens.any { it.equals(allergy, ignoreCase = true) } ||
-            food.name.contains(allergy, ignoreCase = true) ||
-            ingredientItem.displayName.contains(allergy, ignoreCase = true)
-          ) {
-            allergenViolationFound = "Contains declared allergen '$allergy' via ingredient '${food.name}'"
-            break
-          }
+      val foodName = food?.name ?: ""
+      val foodAllergens = food?.allergens ?: emptyList()
+
+      for (allergy in profile.allergies) {
+        val allergyLower = allergy.trim().lowercase()
+        val allergyRoot = if (allergyLower.endsWith("s") && allergyLower.length > 3) allergyLower.dropLast(1) else allergyLower
+
+        val matchesAllergen = foodAllergens.any { it.equals(allergy, ignoreCase = true) } ||
+          foodName.contains(allergy, ignoreCase = true) ||
+          foodName.contains(allergyRoot, ignoreCase = true) ||
+          ingredientItem.displayName.contains(allergy, ignoreCase = true) ||
+          ingredientItem.displayName.contains(allergyRoot, ignoreCase = true) ||
+          ingredientItem.ingredientId.contains(allergy, ignoreCase = true) ||
+          ingredientItem.ingredientId.contains(allergyRoot, ignoreCase = true)
+
+        if (matchesAllergen) {
+          allergenViolationFound = "Contains declared allergen '$allergy' via ingredient '${ingredientItem.displayName}'"
+          break
         }
       }
       if (allergenViolationFound != null) break

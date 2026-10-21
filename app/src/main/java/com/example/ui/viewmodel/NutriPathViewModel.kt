@@ -19,6 +19,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import android.content.Context
+import com.example.data.repository.AuthRepository
+import com.example.data.repository.CloudSyncRepository
+import com.google.firebase.auth.FirebaseUser
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -29,6 +33,14 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
   private val database = NutriPathDatabase.getDatabase(application)
   private val healthProfileRepo = HealthProfileRepository(database.healthProfileDao())
   private val mealPlanRepo = MealPlanRepository(database.mealPlanDao())
+  private val authRepo = AuthRepository()
+  private val cloudSyncRepo = CloudSyncRepository(application)
+
+  val currentUser: StateFlow<FirebaseUser?> = authRepo.authStateFlow
+    .stateIn(viewModelScope, SharingStarted.Eagerly, authRepo.currentUser)
+
+  private val _isAuthenticating = MutableStateFlow(false)
+  val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
 
   val healthProfile: StateFlow<HealthProfile> = healthProfileRepo.profileFlow
     .stateIn(viewModelScope, SharingStarted.Eagerly, HealthProfile())
@@ -400,4 +412,108 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       _isOnboardingActive.value = true
     }
   }
+
+  fun signInWithGoogle(
+    context: Context,
+    onSuccess: () -> Unit,
+    onError: (String) -> Unit
+  ) {
+    viewModelScope.launch {
+      _isAuthenticating.value = true
+      val result = authRepo.signInWithGoogleCredential(context)
+      _isAuthenticating.value = false
+      result.fold(
+        onSuccess = { user ->
+          // Sync profile to cloud on successful sign in
+          cloudSyncRepo.syncProfileToCloud(user.uid, healthProfile.value)
+          onSuccess()
+        },
+        onFailure = { error ->
+          onError(error.localizedMessage ?: "Google sign in failed")
+        }
+      )
+    }
+  }
+
+  fun signInWithEmail(
+    email: String,
+    pass: String,
+    onSuccess: () -> Unit,
+    onError: (String) -> Unit
+  ) {
+    viewModelScope.launch {
+      _isAuthenticating.value = true
+      val result = authRepo.signInWithEmail(email, pass)
+      _isAuthenticating.value = false
+      result.fold(
+        onSuccess = { user ->
+          cloudSyncRepo.syncProfileToCloud(user.uid, healthProfile.value)
+          onSuccess()
+        },
+        onFailure = { error ->
+          onError(error.localizedMessage ?: "Invalid email or password")
+        }
+      )
+    }
+  }
+
+  fun signUpWithEmail(
+    email: String,
+    pass: String,
+    onSuccess: () -> Unit,
+    onError: (String) -> Unit
+  ) {
+    viewModelScope.launch {
+      _isAuthenticating.value = true
+      val result = authRepo.signUpWithEmail(email, pass)
+      _isAuthenticating.value = false
+      result.fold(
+        onSuccess = { user ->
+          cloudSyncRepo.syncProfileToCloud(user.uid, healthProfile.value)
+          onSuccess()
+        },
+        onFailure = { error ->
+          onError(error.localizedMessage ?: "Failed to create account")
+        }
+      )
+    }
+  }
+
+  fun signOut() {
+    authRepo.signOut()
+  }
+
+  fun deleteAccountAndPurgeData(
+    onSuccess: () -> Unit,
+    onError: (String) -> Unit
+  ) {
+    viewModelScope.launch {
+      _isAuthenticating.value = true
+      val uid = authRepo.currentUser?.uid
+      if (uid != null) {
+        // 1. Delete cloud profile in Firestore
+        cloudSyncRepo.deleteUserDataFromCloud(uid)
+        // 2. Delete auth user identity in Firebase Auth
+        val deleteResult = authRepo.deleteAccount()
+        deleteResult.fold(
+          onSuccess = {
+            // 3. Purge local Room SQLite database & restart onboarding
+            clearAllData()
+            _isAuthenticating.value = false
+            onSuccess()
+          },
+          onFailure = { error ->
+            _isAuthenticating.value = false
+            onError(error.localizedMessage ?: "Failed to delete account. Please re-authenticate and try again.")
+          }
+        )
+      } else {
+        // Guest mode purge
+        clearAllData()
+        _isAuthenticating.value = false
+        onSuccess()
+      }
+    }
+  }
 }
+

@@ -1,138 +1,135 @@
-# NutriPath: User Authentication & Account Management Architecture
+# NutriPath: Lifesum-Style Multi-Step Onboarding Architecture
 
-Enable secure user authentication (Login, Logout, and Account Deletion) supporting both Google Sign-In via Android Credential Manager and Email/Password with Firebase Auth, maintaining optional guest usage and complete local & cloud data wipe upon account deletion.
+Transform NutriPath's onboarding experience into a polished, consumer-grade, multi-step flow inspired by Lifesum iOS design patterns, while preserving NutriPath's clinical nutrition validation, drug-nutrient interaction gates, and Indian food dataset.
 
 ---
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following decisions synthesize your confirmed preferences from Phase 1. Please review before proceeding.
+> The following decisions synthesize your confirmed preferences. Please review before proceeding.
 
-- **Confirmed Decision 1 (Auth Methods)**: Support **both Google Sign-In (via Credential Manager) and Email/Password** authentication through Firebase Auth. Google Sign-In provides one-tap, seamless biometric authentication, while Email/Password provides universal access.
-- **Confirmed Decision 2 (Gating Strategy)**: **Optional Guest Access with Cloud Sync**. Users can continue using NutriPath offline as a guest without friction; signing in connects their profile to the cloud for backup and sync across devices.
-- **Confirmed Decision 3 (Account Deletion Scope)**: **Full Cloud & Local Purge**. When a user deletes their account, the app deletes their Firebase Auth identity, purges their cloud records, completely wipes the local Room SQLite database (`HealthProfile`, `MealPlanEntity`), and returns the app to a clean onboarding zero-state.
-- **Confirmed Decision 4 (Clinical Core & Dataset Integrity)**: All underlying deterministic nutrition calculations, NutriOrion Drug-Nutrient Interaction safety gates, and the 1,015-item Indian food dataset in Room SQLite remain intact and operate seamlessly in both guest and authenticated states.
-
----
-
-## 1. Overview & Core Concept
-
-### What It Does
-* **Guest & Authenticated States**: Users can seamlessly use the app without logging in (storing all profiles, meals, and logs locally in Room SQLite). When ready, they can sign in or sign up via Google Sign-In or Email/Password.
-* **Account Hub (`AccountScreen` / Menu Integration)**: In `AppMenuScreen`, an "Account & Sync" section shows the active user state (Signed In as `user@example.com` vs. "Guest / Local Mode"), with action buttons to Log In, Log Out, or Delete Account.
-* **Authentication Dialog / Screen (`AuthDialog` / `AuthScreen`)**: Clean M3 bottom sheet or dialog offering:
-  1. "Sign in with Google" button (using Jetpack Credential Manager `GetSignInWithGoogleOption`).
-  2. Email and Password fields with "Sign In" and "Create Account" toggle.
-* **Account Deletion Safeguard**: A double-confirmation modal warning the user that deleting their account irreversibly destroys their cloud profile and erases all local meal plans and logs.
+- **Confirmed Decision 1 (Flow Fidelity)**: Implement the **full multi-step Lifesum experience** complete with inspirational hero screens, social proof badges, goal selections, multi-select lifestyle desires, biometrics, affirmation interstitial, animated calculation progress (0% to 100%), and final plan reveal.
+- **Confirmed Decision 2 (Clinical Integration)**: Seamlessly embed **dedicated clinical steps** for chronic medical conditions (Type 2 Diabetes, Hypertension, CKD, etc.) and food allergies (Peanuts, Dairy, Gluten, etc.) directly into the flow without compromising the sleek consumer aesthetic.
+- **Confirmed Decision 3 (Visual Identity)**: Adopt the **Lifesum warm cream background (`#FDFBF7`) with vibrant emerald green buttons (`#22C55E` / `#16A34A`)**, clean stone typography, thin dark top progress bar, and modern selectable cards.
+- **Confirmed Decision 4 (Authentication & Guest Continuity)**: Maintain optional guest access on the final plan reveal screen alongside one-tap Google Sign-In and Email/Password registration.
 
 ---
 
-## 2. User Experience & Visual Design
-
-### User Interaction Flows
+## 1. Flow Breakdown & Screen Stages
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  Home Screen (Natural Header)                                │
-│  [NP] NutriPath                           [ ⋮ (Menu) ]       │
-└───────────────────────────────┬──────────────────────────────┘
-                                │ Taps 3-dot button
-                                ▼
-┌──────────────────────────────────────────────────────────────┐
-│  AppMenuScreen ("Menu & Clinical Settings")                  │
-│                                                              │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │ 👤 Account & Cloud Backup                              │  │
-│  │ Status: Signed in as vishnu@gmail.com                  │  │
-│  │ [ Log Out ]                     [ Delete Account ]     │  │
-│  │ (Or if Guest: "Guest Mode" -> [ Sign In / Register ])  │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                                                              │
-│  • Health Profile                                            │
-│  • Clinical Safety & DNI Rules                               │
-│  • Re-run Health Setup                                       │
-│  • Clinical Engine Information                               │
-└───────────────────────────────┬──────────────────────────────┘
-                                │ Taps "Delete Account"
-                                ▼
-┌──────────────────────────────────────────────────────────────┐
-│  AlertDialog: "Delete Account & Purge Data?"                 │
-│  "This will permanently delete your cloud account and wipe   │
-│   all local meal history and health profiles.                │
-│   This action cannot be undone."                             │
-│                                                              │
-│  [ Cancel ]                 [ Delete Account & Wipe (Red) ]  │
-└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 1: Welcome & Social Proof                                        │
+│ • Hero photography asset + "Nutrition is your superpower for change"   │
+│ • Credibility badges: "App of the Day", "Clinical Safety Engine"       │
+│ • Action: [ GET STARTED ] or [ I already have an account ]             │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 2: Weight Goal Selection                                         │
+│ • "How do you feel about your weight?"                                 │
+│ • [ I want to lose weight ]                                            │
+│ • [ Fine, but want to eat healthy ]                                    │
+│ • [ I want more muscle mass ]                                          │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 3: Lifestyle Desires (Multi-Select)                              │
+│ • "Choose what else is important to you"                               │
+│ • Selectable cards that turn vibrant green when active:                │
+│   [ More daily energy ]        [ Stabilize my mood & blood sugar ]     │
+│   [ Better fitting clothes ]   [ Create better structure ]             │
+│   [ Learn healthy recipes ]    [ Feel mentally sharp ]                 │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 4: Biological Biometrics                                         │
+│ • 4A: Gender Selection ("Female" / "Male")                             │
+│ • 4B: Date of Birth / Age selector                                     │
+│ • 4C: Weight & Height selector (kg / lbs unit switch)                  │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 5: Dedicated Clinical Safety (NutriPath Core)                    │
+│ • 5A: Medical Conditions (Type 2 Diabetes, Hypertension, CKD, etc.)    │
+│ • 5B: Food Allergies & Sensitivities (Peanuts, Dairy, Gluten, etc.)    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 6: Affirmation Interstitial                                      │
+│ • Soft card overlay: "Great — we've got your starting point.           │
+│   Now we can make your plan smarter and more personal."                │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 7: Desired Speed of Change                                       │
+│ • "Desired speed of change?"                                           │
+│ • Slider (0.10 to 1.00 kg/week) with dynamic label:                    │
+│   "0.20 kg/week • Lasting impact" vs "0.50 kg/week • Steady momentum"  │
+│ • Action: [ BUILD MY PLAN ]                                            │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 8: Animated Calculation & Plan Synthesis                         │
+│ • Full-screen pastel background with large percentage animation:       │
+│   0% ──> 42% ──> 78% ──> 100%                                          │
+│ • Dynamic clinical status text: "Calculating metabolic rate...",       │
+│   "Applying ICMR clinical parameters...", "Finalizing your plan"       │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 9: Personalized Plan Reveal & Entry                              │
+│ • "Your personalized plan is ready"                                    │
+│ • Summary badge: Calorie target & Macro breakdown                      │
+│ • [ Continue with Google ]                                             │
+│ • [ Continue with Email ]                                              │
+│ • [ Continue as Guest ]                                                │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Key Product Decisions & Trade-Offs
+## 2. Visual Styling & Color System
 
-- **Decision 1: Dual Identity Providers (Google Sign-In + Email/Password)**
-  * *Chosen Approach*: Implement Credential Manager for Google Sign-In (one-tap biometric) alongside Firebase Email/Password Auth.
-  * *Why*: Meets your explicit requirement for both authentication options while providing the smoothest native Android sign-in UX.
-- **Decision 2: Non-Blocking Guest Architecture**
-  * *Chosen Approach*: Keep the app functional offline out-of-the-box using Room SQLite. Signing in attaches a Firebase `uid` and syncs the profile to Firestore.
-  * *Why*: Medical nutrition apps should never lock a patient out during acute meal logging or grocery shopping due to network dropout.
-- **Decision 3: Complete Data Cascade on Deletion**
-  * *Chosen Approach*: Execute `user.delete()` on Firebase Auth, and trigger `viewModel.clearAllData()` to empty the Room database and restart onboarding.
-  * *Why*: Strictly adheres to Google Play privacy policies and patient data deletion rights (GDPR/HIPAA principles).
+- **Background Canvas**: `#FDFBF7` (Lifesum Warm Cream / Vanilla)
+- **Primary Action Buttons**: `#22C55E` (Vibrant Emerald Green) with bold white text
+- **Selected Card Surface**: `#22C55E` or `#E8F8EE` with `#16A34A` outline
+- **Unselected Card Surface**: `#FFFFFF` with subtle `#E7E5E4` border
+- **Headings & Body Text**: `#1C1917` (Deep Charcoal Stone)
+- **Secondary Subtitles**: `#78716C` (Warm Stone Muted)
+- **Top Header Bar**: Minimalist back arrow + thin segmented progress bar tracking completion percentage.
+- **Touch Target Standard**: 52dp height for all buttons and option cards.
 
 ---
 
-## 4. Technical Architecture & Implementation Strategy
+## 3. Technical Architecture & Component Structure
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                         Presentation Layer                               │
-│                                                                          │
-│    HomeScreen ──(⋮)──> AppMenuScreen ───> AuthDialog / Screen            │
-│                             │                                            │
-│                             ├──> HealthProfileScreen                     │
-│                             └──> SettingsSafetyScreen                    │
-└──────────────────────────────┬───────────────────────────────────────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│                     ViewModel & Auth Repository                          │
-│                                                                          │
-│  • NutriPathViewModel                                                    │
-│    - currentUser: StateFlow<FirebaseUser?>                               │
-│    - signInWithGoogle(credential: CustomCredential)                      │
-│    - signInWithEmail(email, password)                                    │
-│    - signUpWithEmail(email, password)                                    │
-│    - signOut()                                                           │
-│    - deleteAccountAndPurgeData()                                         │
-│                                                                          │
-│  • AuthRepository                                                        │
-│    - FirebaseAuth.getInstance()                                          │
-│    - CredentialManager (GetSignInWithGoogleOption)                       │
-└──────────────────────────────┬───────────────────────────────────────────┘
-                               │
-               ┌───────────────┴───────────────┐
-               ▼                               ▼
-┌─────────────────────────────┐ ┌──────────────────────────────────────────┐
-│   Firebase Cloud Backend    │ │          Local Room SQLite DB            │
-│                             │ │                                          │
-│ • Firebase Auth (User Id)   │ │ • HealthProfileDao (Profile Data)        │
-│ • Firestore (Cloud Backup)  │ │ • MealPlanDao (Daily Meals & History)    │
-│                             │ │ • IndianFoodDao (1,015 Reference Items)  │
-└─────────────────────────────┘ └──────────────────────────────────────────┘
-```
+### New / Updated Files
+1. **`app/src/main/java/com/example/ui/screens/onboarding/LifesumOnboardingScreen.kt`**:
+   - Master state machine coordinating the 9 onboarding stages.
+   - Smooth `AnimatedContent` horizontal transitions between steps.
+   - Hardware back button handling (`BackHandler`) to navigate backwards within the onboarding sequence.
+2. **`app/src/main/java/com/example/ui/screens/onboarding/components/`**:
+   - `OnboardingTopBar.kt`: Clean back arrow + animated thin progress bar.
+   - `SelectableOptionCard.kt`: Standardized card with checkmark/radio styling and smooth elevation transitions.
+   - `WheelNumberPicker.kt` or `UnitSlider.kt`: Polished numeric input for age, weight, and height.
+   - `SpeedOfChangeSlider.kt`: Smooth slider with dynamic pace descriptors ("Lasting impact", "Steady momentum", "Accelerated pace").
+   - `PlanCalculationAnimation.kt`: Coroutine-driven counter animating from 0 to 100% with staggered clinical status messages.
+3. **`app/src/main/java/com/example/ui/theme/Color.kt` & `Theme.kt`**:
+   - Add Lifesum color definitions (`LifesumCreamBackground`, `LifesumVibrantGreen`, `LifesumDarkStone`, `LifesumCardWhite`).
+4. **`app/src/main/java/com/example/MainActivity.kt`**:
+   - Wire `OnboardingScreen` to the new `LifesumOnboardingScreen`, connecting Google Sign-In, Email Sign-In, and guest completion callbacks.
 
-### Steps to Execute Upon Approval
-1. **Firebase Setup (`set_up_firebase`)**:
-   * Execute standard 2-step setup handshake to provision Firebase Authentication and Firestore on the backend.
-2. **Dependencies in `build.gradle.kts`**:
-   * Enable `libs.firebase.auth`, `libs.androidx.credentials`, `libs.androidx.credentials.play.services`, `libs.googleid`, and `libs.firebase.firestore`.
-3. **Authentication Repository & Services**:
-   * Implement `AuthRepository` managing `FirebaseAuth`, `CredentialManager`, Google Sign-In token exchanges, and Email/Password flows.
-4. **ViewModel Integration**:
-   * Connect `NutriPathViewModel` to observe `authStateFlow`, handle login/logout states, and cascade account deletion to `clearAllData()`.
-5. **UI Components (`AuthDialog` & `AccountCard` in `AppMenuScreen`)**:
-   * Build the clean M3 Authentication Dialog with Google Sign-In and Email/Password options.
-   * Add the Account Status Card in `AppMenuScreen` with Log In, Log Out, and Delete Account triggers.
-6. **Verification (`compile_applet`)**:
-   * Compile and verify the complete application build.
+---
+
+## 4. Verification Plan
+
+1. **Flow & Step Verification**:
+   - Test step transitions from Welcome -> Goal -> Desires -> Biometrics -> Clinical -> Affirmation -> Speed -> Animation -> Reveal.
+2. **Clinical Calculation Integrity**:
+   - Verify that Mifflin-St Jeor BMR, TDEE, daily calorie deficit/surplus (based on the chosen speed of change), and medical conditions properly update `HealthProfile`.
+3. **Authentication & Guest Mode**:
+   - Test "Continue with Google", "Continue with Email", and "Continue as Guest" from the final reveal screen.
+4. **Compilation & Unit Tests**:
+   - Run `compile_applet` and Gradle test suite (`gradle :app:testDebugUnitTest`) to ensure 100% build health.

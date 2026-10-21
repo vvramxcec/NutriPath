@@ -1,8 +1,11 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -27,34 +30,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.HealthAndSafety
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,738 +60,322 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.data.model.HealthProfile
-import com.example.data.model.MedicalConditionCatalog
-import com.example.ui.theme.AllergyUnselectedBg
-import com.example.ui.theme.AllergyUnselectedBorder
-import com.example.ui.theme.AllergyUnselectedText
-import com.example.ui.theme.CardBorder
-import com.example.ui.theme.ChipUnselectedBg
-import com.example.ui.theme.ChipUnselectedBorder
-import com.example.ui.theme.ChipUnselectedText
-import com.example.ui.theme.DarkCharcoalText
-import com.example.ui.theme.DeepTealContainer
-import com.example.ui.theme.DeepTealDark
+import com.example.ui.components.AuthDialog
 import com.example.ui.theme.DeepTealPrimary
-import com.example.ui.theme.LimeYellowAccent
-import com.example.ui.theme.LimeYellowBackground
-import com.example.ui.theme.StatusApprovedGreen
-import com.example.ui.theme.StatusRejectedRed
-import com.example.ui.theme.TextMuted
-import com.example.ui.theme.WarmWhiteCard
+import com.example.ui.theme.LifesumCreamBg
+import com.example.ui.theme.LifesumGreenDarkText
+import com.example.ui.theme.LifesumGreenLight
+import com.example.ui.theme.LifesumLavender
+import com.example.ui.theme.LifesumStoneBorder
+import com.example.ui.theme.LifesumStoneDark
+import com.example.ui.theme.LifesumStoneMuted
+import com.example.ui.theme.LifesumVibrantGreen
+import com.example.ui.viewmodel.NutriPathViewModel
+import kotlinx.coroutines.delay
+import java.util.Locale
 
+/**
+ * Streamlined Lifesum-Style Onboarding Screen
+ * Asks ONLY what is medically and clinically required to calculate calories,
+ * macronutrients, and safety rules:
+ *
+ * Step 0: Welcome Hero & Value Proposition
+ * Step 1: Weight Goal (Lose Weight, Eat Healthy, Build Muscle)
+ * Step 2: Biometrics (Gender, Age, Weight, Height) - directly powers Mifflin-St Jeor BMR & TDEE
+ * Step 3: Clinical Health & Safety (Medical Conditions & Allergies) - powers DNI rules & safety gates
+ * Step 4: Desired Speed of Change (Calculates daily calorie surplus / deficit)
+ * Step 5: Plan Finalization Animation (0% -> 100%)
+ * Step 6: Personalized Plan Reveal & Entry (Google / Email / Continue as Guest)
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OnboardingScreen(
   initialProfile: HealthProfile,
   onCompleteOnboarding: (HealthProfile) -> Unit,
   onSkipToDefaults: () -> Unit = {},
+  viewModel: NutriPathViewModel? = null,
   modifier: Modifier = Modifier
 ) {
-  var currentStep by remember { mutableIntStateOf(1) }
-  val totalSteps = 5
+  val context = LocalContext.current
+  var currentStep by remember { mutableIntStateOf(0) }
+  val totalProgressSteps = 4 // Steps 1 to 4 are input steps
 
-  var name by remember { mutableStateOf(initialProfile.name) }
-  var ageText by remember { mutableStateOf(initialProfile.age.toString()) }
-  var weightText by remember { mutableStateOf(initialProfile.weightKg.toString()) }
-  var heightText by remember { mutableStateOf(initialProfile.heightCm.toString()) }
-  var gender by remember { mutableStateOf(initialProfile.gender) }
-  var activityLevel by remember { mutableStateOf(initialProfile.activityLevel) }
+  // Required Inputs
+  var weightGoal by remember { mutableStateOf(initialProfile.nutritionGoal.ifBlank { "I want to lose weight" }) }
+  var gender by remember { mutableStateOf(initialProfile.gender.ifBlank { "Female" }) }
+  var age by remember { mutableIntStateOf(if (initialProfile.age > 0) initialProfile.age else 32) }
+  var weightKg by remember { mutableFloatStateOf(if (initialProfile.weightKg > 0) initialProfile.weightKg else 70.0f) }
+  var heightCm by remember { mutableFloatStateOf(if (initialProfile.heightCm > 0) initialProfile.heightCm else 170.0f) }
+  var isLbsUnit by remember { mutableStateOf(false) }
 
-  var selectedConditions by remember { mutableStateOf(initialProfile.medicalConditions.toSet()) }
-  var selectedAllergies by remember { mutableStateOf(initialProfile.allergies.toSet()) }
-  var dietaryPreference by remember { mutableStateOf(initialProfile.dietaryPreference) }
-  var nutritionGoal by remember { mutableStateOf(initialProfile.nutritionGoal) }
-  var consentGiven by remember { mutableStateOf(true) }
+  // Clinical parameters (crucial for NutriPath safety engine)
+  var selectedConditions by remember {
+    mutableStateOf(
+      if (initialProfile.medicalConditions.isNotEmpty()) initialProfile.medicalConditions.toSet()
+      else setOf("None / General Wellness")
+    )
+  }
+  var selectedAllergies by remember {
+    mutableStateOf(initialProfile.allergies.toSet())
+  }
+  var speedKgPerWeek by remember { mutableFloatStateOf(0.50f) }
 
-  val textFieldColors = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = DarkCharcoalText,
-    unfocusedTextColor = DarkCharcoalText,
-    focusedLabelColor = DeepTealDark,
-    unfocusedLabelColor = DarkCharcoalText.copy(alpha = 0.8f),
-    focusedBorderColor = DeepTealPrimary,
-    unfocusedBorderColor = CardBorder,
-    focusedContainerColor = Color(0xFFFAFCF7),
-    unfocusedContainerColor = Color(0xFFFAFCF7),
-    cursorColor = DeepTealPrimary
-  )
+  // Plan generation calculation state (Step 5)
+  var calculationProgress by remember { mutableIntStateOf(0) }
 
-  Column(
+  // Auth Dialog state
+  var showAuthDialog by remember { mutableStateOf(false) }
+  var authErrorMessage by remember { mutableStateOf<String?>(null) }
+  var isAuthenticating by remember { mutableStateOf(false) }
+
+  // Helper to compile final profile
+  fun buildFinalProfile(): HealthProfile {
+    // Mifflin-St Jeor BMR
+    val bmr = 10f * weightKg + 6.25f * heightCm - 5f * age + (if (gender.equals("Female", ignoreCase = true)) -161 else 5)
+    val activityMultiplier = 1.4f
+    val tdee = bmr * activityMultiplier
+
+    // Calorie target based on goal and pace
+    val dailyAdjustment = when (weightGoal) {
+      "I want to lose weight" -> (speedKgPerWeek * 7700f / 7f)
+      "I want more muscle mass" -> -300f
+      else -> 0f
+    }
+    val targetCalories = (tdee - dailyAdjustment).toInt().coerceIn(1350, 3400)
+
+    val isDiabetic = selectedConditions.any { it.contains("Diabetes", ignoreCase = true) }
+    val isCkd = selectedConditions.any { it.contains("Kidney", ignoreCase = true) || it.contains("CKD", ignoreCase = true) }
+
+    val proteinMultiplier = when {
+      isCkd -> 0.8f
+      weightGoal == "I want more muscle mass" -> 1.8f
+      else -> 1.3f
+    }
+    val proteinG = (weightKg * proteinMultiplier).toInt().coerceIn(50, 160)
+    val fatG = ((targetCalories * 0.28f) / 9f).toInt().coerceIn(35, 80)
+    val carbsG = ((targetCalories - (proteinG * 4) - (fatG * 9)) / 4f).toInt().coerceIn(120, 350)
+
+    val activeConditions = selectedConditions.filter { it != "None / General Wellness" }
+
+    val restrictions = mutableListOf<String>()
+    if (isDiabetic) restrictions.add("Low Glycemic Index")
+    if (activeConditions.any { it.contains("Hypertension", ignoreCase = true) }) {
+      restrictions.add("Low Sodium (< 1500mg)")
+    }
+    if (activeConditions.any { it.contains("Cholesterol", ignoreCase = true) }) {
+      restrictions.add("Low Saturated Fat (< 10g)")
+    }
+
+    return initialProfile.copy(
+      name = initialProfile.name.ifBlank { "Personalized Patient" },
+      age = age,
+      gender = gender,
+      weightKg = weightKg,
+      heightCm = heightCm,
+      medicalConditions = activeConditions,
+      allergies = selectedAllergies.toList(),
+      dietaryRestrictions = restrictions,
+      nutritionGoal = weightGoal,
+      dailyCalorieTarget = targetCalories,
+      proteinTargetG = proteinG,
+      carbsTargetG = carbsG,
+      fatTargetG = fatG,
+      maxSodiumMg = if (activeConditions.any { it.contains("Hypertension", ignoreCase = true) }) 1500 else 2300,
+      consentGiven = true,
+      hasCompletedOnboarding = true
+    )
+  }
+
+  // Handle hardware / gesture back button
+  BackHandler(enabled = currentStep > 0 && currentStep != 5) {
+    if (currentStep == 6) {
+      currentStep = 4 // Return to speed of change from final screen
+    } else {
+      currentStep--
+    }
+  }
+
+  // Animation trigger for Step 5 (Calculation screen)
+  LaunchedEffect(currentStep) {
+    if (currentStep == 5) {
+      calculationProgress = 0
+      while (calculationProgress < 100) {
+        delay(20)
+        calculationProgress += 2
+      }
+      delay(300)
+      currentStep = 6
+    }
+  }
+
+  // Auth Dialog Component
+  if (showAuthDialog && viewModel != null) {
+    AuthDialog(
+      isAuthenticating = isAuthenticating,
+      onDismiss = { showAuthDialog = false },
+      onGoogleSignIn = { ctx ->
+        isAuthenticating = true
+        viewModel.signInWithGoogle(
+          context = ctx,
+          onSuccess = {
+            isAuthenticating = false
+            showAuthDialog = false
+            onCompleteOnboarding(buildFinalProfile())
+          },
+          onError = { err ->
+            isAuthenticating = false
+            authErrorMessage = err
+          }
+        )
+      },
+      onEmailSignIn = { email, pass ->
+        isAuthenticating = true
+        viewModel.signInWithEmail(
+          email = email,
+          pass = pass,
+          onSuccess = {
+            isAuthenticating = false
+            showAuthDialog = false
+            onCompleteOnboarding(buildFinalProfile())
+          },
+          onError = { err ->
+            isAuthenticating = false
+            authErrorMessage = err
+          }
+        )
+      },
+      onEmailSignUp = { email, pass ->
+        isAuthenticating = true
+        viewModel.signUpWithEmail(
+          email = email,
+          pass = pass,
+          onSuccess = {
+            isAuthenticating = false
+            showAuthDialog = false
+            onCompleteOnboarding(buildFinalProfile())
+          },
+          onError = { err ->
+            isAuthenticating = false
+            authErrorMessage = err
+          }
+        )
+      }
+    )
+  }
+
+  // Container
+  Surface(
     modifier = modifier
       .fillMaxSize()
-      .background(LimeYellowBackground)
-      .testTag("onboarding_screen")
+      .testTag("streamlined_onboarding_screen"),
+    color = if (currentStep == 5) LifesumLavender else LifesumCreamBg
   ) {
-    // 1. Top Bar with Progress
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .background(WarmWhiteCard)
-        .padding(horizontal = 20.dp, vertical = 14.dp)
-        .border(0.dp, Color.Transparent)
-    ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        if (currentStep > 1) {
-          IconButton(
-            onClick = { currentStep-- },
-            modifier = Modifier.size(36.dp)
-          ) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-              contentDescription = "Back",
-              tint = DeepTealDark
-            )
-          }
-        } else {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-              modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(DeepTealPrimary),
-              contentAlignment = Alignment.Center
-            ) {
-              Text("NP", color = LimeYellowAccent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("NutriPath", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = DeepTealDark)
-          }
-        }
-
-        Text(
-          text = "Step $currentStep of $totalSteps",
-          fontSize = 13.sp,
-          fontWeight = FontWeight.Bold,
-          color = DeepTealDark
+    Column(modifier = Modifier.fillMaxSize()) {
+      // Top Navigation Bar (Shown on input steps 1 to 4)
+      if (currentStep in 1..4) {
+        LifesumTopBar(
+          progress = currentStep / totalProgressSteps.toFloat(),
+          onBackClick = { currentStep-- },
+          onSkipClick = onSkipToDefaults
         )
-
-        TextButton(
-          onClick = {
-            onSkipToDefaults()
-          }
-        ) {
-          Text("Skip", fontSize = 13.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
-        }
       }
 
-      Spacer(modifier = Modifier.height(10.dp))
-
-      LinearProgressIndicator(
-        progress = { currentStep / totalSteps.toFloat() },
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(6.dp)
-          .clip(RoundedCornerShape(3.dp)),
-        color = DeepTealPrimary,
-        trackColor = DeepTealContainer
-      )
-    }
-
-    // 2. Animated Step Content
-    Box(
-      modifier = Modifier
-        .weight(1f)
-        .fillMaxWidth()
-        .padding(16.dp)
-    ) {
-      AnimatedContent(
-        targetState = currentStep,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label = "onboarding_step_transition"
-      ) { step ->
-        Column(
-          modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-          verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-          when (step) {
-            // STEP 1: Welcome & Clinical Vision
-            1 -> {
-              Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
-                modifier = Modifier.fillMaxWidth()
-              ) {
-                Column(
-                  modifier = Modifier.padding(24.dp),
-                  horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                  Box(
-                    modifier = Modifier
-                      .size(80.dp)
-                      .clip(RoundedCornerShape(22.dp))
-                      .background(DeepTealPrimary),
-                    contentAlignment = Alignment.Center
-                  ) {
-                    Icon(
-                      imageVector = Icons.Default.HealthAndSafety,
-                      contentDescription = null,
-                      tint = LimeYellowAccent,
-                      modifier = Modifier.size(44.dp)
-                    )
-                  }
-
-                  Spacer(modifier = Modifier.height(18.dp))
-
-                  Text(
-                    text = "Welcome to NutriPath",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkCharcoalText,
-                    textAlign = TextAlign.Center
-                  )
-
-                  Spacer(modifier = Modifier.height(8.dp))
-
-                  Text(
-                    text = "Personalized clinical nutrition tailored to your medical health before recommending food.",
-                    fontSize = 14.sp,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.Medium
-                  )
-
-                  Spacer(modifier = Modifier.height(24.dp))
-
-                  PillarRow(
-                    icon = Icons.Default.Security,
-                    title = "Independent Safety Validator",
-                    description = "Clinical rules strictly screen for allergens, diabetes glycemic load, hypertension sodium, and CKD protein."
-                  )
-
-                  Spacer(modifier = Modifier.height(14.dp))
-
-                  PillarRow(
-                    icon = Icons.Default.Verified,
-                    title = "Verified Food Composition",
-                    description = "Nutrients deterministically calculated from authentic ICMR-NIN & USDA food databases."
-                  )
-
-                  Spacer(modifier = Modifier.height(14.dp))
-
-                  PillarRow(
-                    icon = Icons.Default.Restaurant,
-                    title = "Kerala & Indian Specialties",
-                    description = "Authentic dishes with Kerala Red Matta rice, Moong dal, Thoran, Avial, and Ragi formatted to your health goals."
-                  )
-                }
-              }
+      // Step Contents with smooth horizontal transitions
+      Box(modifier = Modifier.weight(1f)) {
+        AnimatedContent(
+          targetState = currentStep,
+          transitionSpec = {
+            if (targetState > initialState) {
+              slideInHorizontally { width -> width / 3 } + fadeIn() togetherWith
+                slideOutHorizontally { width -> -width / 3 } + fadeOut()
+            } else {
+              slideInHorizontally { width -> -width / 3 } + fadeIn() togetherWith
+                slideOutHorizontally { width -> width / 3 } + fadeOut()
             }
-
-            // STEP 2: Demographics & Body Metrics
-            2 -> {
-              Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
-                modifier = Modifier.fillMaxWidth()
-              ) {
-                Column(
-                  modifier = Modifier.padding(22.dp),
-                  verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                      modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(LimeYellowBackground),
-                      contentAlignment = Alignment.Center
-                    ) {
-                      Icon(Icons.Default.Person, contentDescription = null, tint = DeepTealDark)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                      Text("Personal Demographics", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                      Text("Used to calculate your daily metabolic energy needs", fontSize = 12.sp, color = TextMuted)
-                    }
-                  }
-
-                  OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("What should we call you?", fontWeight = FontWeight.SemiBold) },
-                    modifier = Modifier.fillMaxWidth().testTag("onboarding_name_input"),
-                    colors = textFieldColors,
-                    shape = RoundedCornerShape(12.dp)
-                  )
-
-                  Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                  ) {
-                    OutlinedTextField(
-                      value = ageText,
-                      onValueChange = { ageText = it },
-                      label = { Text("Age (yrs)", fontWeight = FontWeight.SemiBold) },
-                      modifier = Modifier.weight(1f).testTag("onboarding_age_input"),
-                      colors = textFieldColors,
-                      shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                      value = weightText,
-                      onValueChange = { weightText = it },
-                      label = { Text("Weight (kg)", fontWeight = FontWeight.SemiBold) },
-                      modifier = Modifier.weight(1f).testTag("onboarding_weight_input"),
-                      colors = textFieldColors,
-                      shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                      value = heightText,
-                      onValueChange = { heightText = it },
-                      label = { Text("Height (cm)", fontWeight = FontWeight.SemiBold) },
-                      modifier = Modifier.weight(1f).testTag("onboarding_height_input"),
-                      colors = textFieldColors,
-                      shape = RoundedCornerShape(12.dp)
-                    )
-                  }
-
-                  Text("Gender / Sex:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Male", "Female", "Other").forEach { g ->
-                      val isSelected = (gender == g)
-                      FilterChip(
-                        selected = isSelected,
-                        onClick = { gender = g },
-                        label = { Text(g, fontSize = 13.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                          containerColor = ChipUnselectedBg,
-                          labelColor = ChipUnselectedText,
-                          selectedContainerColor = DeepTealPrimary,
-                          selectedLabelColor = Color.White
-                        ),
-                        border = BorderStroke(
-                          width = if (isSelected) 1.5.dp else 1.dp,
-                          color = if (isSelected) DeepTealDark else ChipUnselectedBorder
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                      )
-                    }
-                  }
-
-                  Text("Daily Activity Level:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                  FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                  ) {
-                    MedicalConditionCatalog.ACTIVITY_LEVELS.forEach { level ->
-                      val isSelected = (activityLevel == level)
-                      FilterChip(
-                        selected = isSelected,
-                        onClick = { activityLevel = level },
-                        label = { Text(level, fontSize = 13.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                          containerColor = ChipUnselectedBg,
-                          labelColor = ChipUnselectedText,
-                          selectedContainerColor = DeepTealPrimary,
-                          selectedLabelColor = Color.White
-                        ),
-                        border = BorderStroke(
-                          width = if (isSelected) 1.5.dp else 1.dp,
-                          color = if (isSelected) DeepTealDark else ChipUnselectedBorder
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                      )
-                    }
-                  }
-                }
-              }
-            }
-
-            // STEP 3: Medical Conditions
-            3 -> {
-              Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
-                modifier = Modifier.fillMaxWidth()
-              ) {
-                Column(modifier = Modifier.padding(22.dp)) {
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                      modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(LimeYellowBackground),
-                      contentAlignment = Alignment.Center
-                    ) {
-                      Icon(Icons.Default.HealthAndSafety, contentDescription = null, tint = DeepTealDark)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                      Text("Medical Conditions", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                      Text("Select all that apply. Select None if in good health.", fontSize = 12.sp, color = TextMuted)
-                    }
-                  }
-
-                  Spacer(modifier = Modifier.height(16.dp))
-
-                  MedicalConditionCatalog.AVAILABLE_CONDITIONS.forEach { condition ->
-                    val isSelected = selectedConditions.contains(condition)
-                    val desc = MedicalConditionCatalog.CONDITION_DESCRIPTIONS[condition] ?: ""
-
-                    Box(
-                      modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isSelected) DeepTealContainer.copy(alpha = 0.5f) else Color(0xFFF9FAF6))
-                        .border(
-                          1.5.dp,
-                          if (isSelected) DeepTealPrimary else ChipUnselectedBorder,
-                          RoundedCornerShape(12.dp)
-                        )
-                        .clickable {
-                          selectedConditions = if (isSelected) selectedConditions - condition else selectedConditions + condition
-                        }
-                        .padding(12.dp)
-                    ) {
-                      Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                      ) {
-                        Box(
-                          modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(if (isSelected) DeepTealPrimary else Color.Transparent)
-                            .border(1.5.dp, if (isSelected) DeepTealPrimary else CardBorder, CircleShape),
-                          contentAlignment = Alignment.Center
-                        ) {
-                          if (isSelected) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                          }
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                          Text(condition, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                          Spacer(modifier = Modifier.height(2.dp))
-                          Text(desc, fontSize = 12.sp, color = TextMuted, lineHeight = 16.sp)
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            // STEP 4: Food Allergies & Intolerances
-            4 -> {
-              Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
-                modifier = Modifier.fillMaxWidth()
-              ) {
-                Column(modifier = Modifier.padding(22.dp)) {
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                      modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(AllergyUnselectedBg),
-                      contentAlignment = Alignment.Center
-                    ) {
-                      Icon(Icons.Default.Warning, contentDescription = null, tint = StatusRejectedRed)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                      Text("Critical Food Allergies", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                      Text("Checked items are strictly prohibited by safety checks", fontSize = 12.sp, color = StatusRejectedRed)
-                    }
-                  }
-
-                  Spacer(modifier = Modifier.height(16.dp))
-
-                  FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                  ) {
-                    MedicalConditionCatalog.AVAILABLE_ALLERGIES.forEach { allergy ->
-                      val isSelected = selectedAllergies.contains(allergy)
-                      FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                          selectedAllergies = if (isSelected) selectedAllergies - allergy else selectedAllergies + allergy
-                        },
-                        label = {
-                          Text(
-                            text = allergy,
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
-                          )
-                        },
-                        leadingIcon = if (isSelected) {
-                          { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White) }
-                        } else null,
-                        colors = FilterChipDefaults.filterChipColors(
-                          containerColor = AllergyUnselectedBg,
-                          labelColor = AllergyUnselectedText,
-                          selectedContainerColor = StatusRejectedRed,
-                          selectedLabelColor = Color.White
-                        ),
-                        border = BorderStroke(
-                          width = if (isSelected) 1.5.dp else 1.dp,
-                          color = if (isSelected) Color(0xFF7F1D1D) else AllergyUnselectedBorder
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                      )
-                    }
-                  }
-
-                  Spacer(modifier = Modifier.height(16.dp))
-
-                  Box(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .clip(RoundedCornerShape(12.dp))
-                      .background(Color(0xFFFEF2F2))
-                      .border(1.dp, Color(0xFFFECACA), RoundedCornerShape(12.dp))
-                      .padding(12.dp)
-                  ) {
-                    Text(
-                      text = if (selectedAllergies.isEmpty()) {
-                        "✓ No allergies declared. Full ingredient spectrum permitted."
-                      } else {
-                        "⚠️ Rule-ALLERG-v1.2 active: Recipes with ${selectedAllergies.joinToString(", ")} will be automatically blocked."
-                      },
-                      fontSize = 12.sp,
-                      color = if (selectedAllergies.isEmpty()) StatusApprovedGreen else StatusRejectedRed,
-                      fontWeight = FontWeight.SemiBold
-                    )
-                  }
-                }
-              }
-            }
-
-            // STEP 5: Diet Preference, Goals & Consent
-            5 -> {
-              Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-                border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
-                modifier = Modifier.fillMaxWidth()
-              ) {
-                Column(
-                  modifier = Modifier.padding(22.dp),
-                  verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                      modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(LimeYellowBackground),
-                      contentAlignment = Alignment.Center
-                    ) {
-                      Icon(Icons.Default.Favorite, contentDescription = null, tint = DeepTealDark)
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                      Text("Diet Preference & Consent", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                      Text("Final step before generating your personalized meals", fontSize = 12.sp, color = TextMuted)
-                    }
-                  }
-
-                  Text("Preferred Cuisine / Diet Style:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                  FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                  ) {
-                    MedicalConditionCatalog.DIETARY_PREFERENCES.forEach { pref ->
-                      val isSelected = (dietaryPreference == pref)
-                      FilterChip(
-                        selected = isSelected,
-                        onClick = { dietaryPreference = pref },
-                        label = { Text(pref, fontSize = 13.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                          containerColor = ChipUnselectedBg,
-                          labelColor = ChipUnselectedText,
-                          selectedContainerColor = DeepTealPrimary,
-                          selectedLabelColor = Color.White
-                        ),
-                        border = BorderStroke(
-                          width = if (isSelected) 1.5.dp else 1.dp,
-                          color = if (isSelected) DeepTealDark else ChipUnselectedBorder
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                      )
-                    }
-                  }
-
-                  Text("Primary Nutrition Goal:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-                  FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                  ) {
-                    MedicalConditionCatalog.NUTRITION_GOALS.forEach { goal ->
-                      val isSelected = (nutritionGoal == goal)
-                      FilterChip(
-                        selected = isSelected,
-                        onClick = { nutritionGoal = goal },
-                        label = { Text(goal, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                          containerColor = ChipUnselectedBg,
-                          labelColor = ChipUnselectedText,
-                          selectedContainerColor = DeepTealPrimary,
-                          selectedLabelColor = Color.White
-                        ),
-                        border = BorderStroke(
-                          width = if (isSelected) 1.5.dp else 1.dp,
-                          color = if (isSelected) DeepTealDark else ChipUnselectedBorder
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                      )
-                    }
-                  }
-
-                  // Privacy Consent Box
-                  Box(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .clip(RoundedCornerShape(14.dp))
-                      .background(Color(0xFFF3F8F2))
-                      .border(1.dp, Color(0xFFD4E2D0), RoundedCornerShape(14.dp))
-                      .padding(14.dp)
-                  ) {
-                    Row(
-                      modifier = Modifier.fillMaxWidth(),
-                      horizontalArrangement = Arrangement.SpaceBetween,
-                      verticalAlignment = Alignment.CenterVertically
-                    ) {
-                      Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                          text = "Health Data Privacy Consent",
-                          fontSize = 13.sp,
-                          fontWeight = FontWeight.Bold,
-                          color = DarkCharcoalText
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                          text = "I consent to processing health conditions strictly for offline meal safety validation.",
-                          fontSize = 11.sp,
-                          color = TextMuted,
-                          lineHeight = 15.sp
-                        )
-                      }
-                      Spacer(modifier = Modifier.width(10.dp))
-                      Switch(
-                        checked = consentGiven,
-                        onCheckedChange = { consentGiven = it },
-                        colors = SwitchDefaults.colors(
-                          checkedThumbColor = Color.White,
-                          checkedTrackColor = DeepTealPrimary
-                        )
-                      )
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          Spacer(modifier = Modifier.height(10.dp))
-        }
-      }
-    }
-
-    // 3. Bottom Action Buttons
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .background(WarmWhiteCard)
-        .padding(horizontal = 20.dp, vertical = 14.dp)
-    ) {
-      if (currentStep < totalSteps) {
-        Button(
-          onClick = { currentStep++ },
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .testTag("onboarding_next_step_btn"),
-          colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary),
-          shape = RoundedCornerShape(14.dp)
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-              text = if (currentStep == 1) "Start Health Setup" else "Continue to Next Step",
-              fontSize = 15.sp,
-              fontWeight = FontWeight.Bold,
-              color = Color.White
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-              imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-              contentDescription = null,
-              tint = Color.White,
-              modifier = Modifier.size(18.dp)
-            )
-          }
-        }
-      } else {
-        Button(
-          onClick = {
-            val parsedAge = ageText.toIntOrNull() ?: 36
-            val parsedWeight = weightText.toFloatOrNull() ?: 72f
-            val parsedHeight = heightText.toFloatOrNull() ?: 172f
-
-            // Auto calculate calorie target based on Harris-Benedict/Mifflin
-            val bmr = 10f * parsedWeight + 6.25f * parsedHeight - 5f * parsedAge + (if (gender == "Female") -161 else 5)
-            val activityMultiplier = when (activityLevel) {
-              "Sedentary" -> 1.2f
-              "Lightly Active" -> 1.375f
-              "Moderately Active" -> 1.55f
-              else -> 1.725f
-            }
-            val calculatedCalories = (bmr * activityMultiplier).toInt().coerceIn(1400, 3200)
-
-            val finishedProfile = initialProfile.copy(
-              name = name.ifBlank { "User" },
-              age = parsedAge,
-              weightKg = parsedWeight,
-              heightCm = parsedHeight,
-              gender = gender,
-              activityLevel = activityLevel,
-              medicalConditions = selectedConditions.toList(),
-              allergies = selectedAllergies.toList(),
-              dietaryPreference = dietaryPreference,
-              nutritionGoal = nutritionGoal,
-              dailyCalorieTarget = calculatedCalories,
-              consentGiven = consentGiven,
-              hasCompletedOnboarding = true
-            )
-
-            onCompleteOnboarding(finishedProfile)
           },
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(54.dp)
-            .testTag("onboarding_complete_btn"),
-          colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary),
-          shape = RoundedCornerShape(14.dp),
-          elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = LimeYellowAccent, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-              text = "Complete & Launch NutriPath",
-              fontSize = 16.sp,
-              fontWeight = FontWeight.Bold,
-              color = Color.White
+          label = "onboarding_step_transition"
+        ) { step ->
+          when (step) {
+            0 -> Step0Welcome(
+              onGetStarted = { currentStep = 1 },
+              onLoginClick = { showAuthDialog = true }
+            )
+            1 -> Step1Goal(
+              selectedGoal = weightGoal,
+              onSelectGoal = {
+                weightGoal = it
+                currentStep = 2
+              }
+            )
+            2 -> Step2Biometrics(
+              gender = gender,
+              age = age,
+              weightKg = weightKg,
+              heightCm = heightCm,
+              isLbsUnit = isLbsUnit,
+              onGenderChanged = { gender = it },
+              onAgeChanged = { age = it },
+              onWeightChanged = { weightKg = it },
+              onHeightChanged = { heightCm = it },
+              onUnitToggled = { isLbsUnit = it },
+              onNext = { currentStep = 3 }
+            )
+            3 -> Step3ClinicalSafety(
+              selectedConditions = selectedConditions,
+              selectedAllergies = selectedAllergies,
+              onToggleCondition = { condition ->
+                selectedConditions = if (condition == "None / General Wellness") {
+                  setOf("None / General Wellness")
+                } else {
+                  val updated = selectedConditions - "None / General Wellness"
+                  if (updated.contains(condition)) updated - condition else updated + condition
+                }
+              },
+              onToggleAllergy = { allergy ->
+                selectedAllergies = if (selectedAllergies.contains(allergy)) {
+                  selectedAllergies - allergy
+                } else {
+                  selectedAllergies + allergy
+                }
+              },
+              onNext = { currentStep = 4 }
+            )
+            4 -> Step4SpeedOfChange(
+              speedKgPerWeek = speedKgPerWeek,
+              onSpeedChanged = { speedKgPerWeek = it },
+              onBuildPlan = { currentStep = 5 }
+            )
+            5 -> Step5Calculation(
+              progress = calculationProgress
+            )
+            6 -> Step6PlanReady(
+              finalProfile = buildFinalProfile(),
+              onGoogleSignIn = {
+                if (viewModel != null) {
+                  viewModel.signInWithGoogle(
+                    context = context,
+                    onSuccess = { onCompleteOnboarding(buildFinalProfile()) },
+                    onError = { authErrorMessage = it }
+                  )
+                } else {
+                  onCompleteOnboarding(buildFinalProfile())
+                }
+              },
+              onEmailSignIn = { showAuthDialog = true },
+              onContinueAsGuest = {
+                onCompleteOnboarding(buildFinalProfile())
+              }
             )
           }
         }
@@ -803,30 +384,1048 @@ fun OnboardingScreen(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Top Bar Component
+// ---------------------------------------------------------------------------
 @Composable
-private fun PillarRow(
-  icon: ImageVector,
-  title: String,
-  description: String
+private fun LifesumTopBar(
+  progress: Float,
+  onBackClick: () -> Unit,
+  onSkipClick: () -> Unit
 ) {
   Row(
-    modifier = Modifier.fillMaxWidth(),
-    verticalAlignment = Alignment.Top
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp, vertical = 12.dp),
+    verticalAlignment = Alignment.CenterVertically
   ) {
-    Box(
+    IconButton(
+      onClick = onBackClick,
       modifier = Modifier
-        .size(38.dp)
-        .clip(RoundedCornerShape(10.dp))
-        .background(LimeYellowBackground),
-      contentAlignment = Alignment.Center
+        .size(40.dp)
+        .testTag("onboarding_back_button")
     ) {
-      Icon(imageVector = icon, contentDescription = null, tint = DeepTealDark, modifier = Modifier.size(20.dp))
+      Icon(
+        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+        contentDescription = "Back",
+        tint = LifesumStoneDark,
+        modifier = Modifier.size(24.dp)
+      )
     }
-    Spacer(modifier = Modifier.width(12.dp))
-    Column(modifier = Modifier.weight(1f)) {
-      Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DarkCharcoalText)
-      Spacer(modifier = Modifier.height(2.dp))
-      Text(text = description, fontSize = 12.sp, color = TextMuted, lineHeight = 16.sp)
+
+    Spacer(modifier = Modifier.width(8.dp))
+
+    LinearProgressIndicator(
+      progress = { progress.coerceIn(0.1f, 1f) },
+      modifier = Modifier
+        .weight(1f)
+        .height(4.dp)
+        .clip(RoundedCornerShape(2.dp)),
+      color = LifesumStoneDark,
+      trackColor = LifesumStoneBorder
+    )
+
+    Spacer(modifier = Modifier.width(8.dp))
+
+    TextButton(
+      onClick = onSkipClick,
+      modifier = Modifier.testTag("onboarding_skip_button")
+    ) {
+      Text(
+        text = "Skip",
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
+        color = LifesumStoneMuted
+      )
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 0: Welcome / Inspiration
+// ---------------------------------------------------------------------------
+@Composable
+private fun Step0Welcome(
+  onGetStarted: () -> Unit,
+  onLoginClick: () -> Unit
+) {
+  val context = LocalContext.current
+
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .verticalScroll(rememberScrollState())
+      .padding(24.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.SpaceBetween
+  ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      Spacer(modifier = Modifier.height(12.dp))
+
+      // Brand Pill
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+          .clip(RoundedCornerShape(20.dp))
+          .background(Color.White)
+          .border(1.dp, LifesumStoneBorder, RoundedCornerShape(20.dp))
+          .padding(horizontal = 14.dp, vertical = 6.dp)
+      ) {
+        Box(
+          modifier = Modifier
+            .size(10.dp)
+            .clip(CircleShape)
+            .background(LifesumVibrantGreen)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+          text = "NutriPath Clinical Nutrition",
+          fontSize = 12.sp,
+          fontWeight = FontWeight.Bold,
+          color = LifesumStoneDark
+        )
+      }
+
+      Spacer(modifier = Modifier.height(24.dp))
+
+      // Hero Card
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(260.dp)
+          .clip(RoundedCornerShape(28.dp))
+          .background(Color.White)
+          .border(1.dp, LifesumStoneBorder, RoundedCornerShape(28.dp)),
+        contentAlignment = Alignment.BottomStart
+      ) {
+        AsyncImage(
+          model = ImageRequest.Builder(context)
+            .data("file:///android_asset/onboarding_hero.png")
+            .crossfade(true)
+            .build(),
+          contentDescription = "Nutrition and Health",
+          contentScale = ContentScale.Crop,
+          modifier = Modifier.fillMaxSize()
+        )
+
+        Box(
+          modifier = Modifier
+            .padding(16.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.94f))
+            .border(1.dp, LifesumStoneBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+              imageVector = Icons.Default.Verified,
+              contentDescription = null,
+              tint = LifesumVibrantGreen,
+              modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+              text = "Personalized clinical guidance",
+              fontSize = 12.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = LifesumStoneDark
+            )
+          }
+        }
+      }
+
+      Spacer(modifier = Modifier.height(28.dp))
+
+      Text(
+        text = "Nutrition is your superpower for change",
+        fontSize = 28.sp,
+        fontWeight = FontWeight.ExtraBold,
+        color = LifesumStoneDark,
+        textAlign = TextAlign.Center,
+        lineHeight = 34.sp
+      )
+
+      Spacer(modifier = Modifier.height(12.dp))
+
+      Text(
+        text = "Scientifically tailored recipes and safety rules built around your body and health conditions.",
+        fontSize = 15.sp,
+        color = LifesumStoneMuted,
+        textAlign = TextAlign.Center,
+        lineHeight = 22.sp
+      )
+    }
+
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(top = 28.dp)
+    ) {
+      Button(
+        onClick = onGetStarted,
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+          containerColor = LifesumVibrantGreen,
+          contentColor = Color.White
+        ),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(56.dp)
+          .testTag("welcome_get_started_btn")
+      ) {
+        Text(
+          text = "GET STARTED",
+          fontSize = 16.sp,
+          fontWeight = FontWeight.Bold,
+          letterSpacing = 0.5.sp
+        )
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      TextButton(
+        onClick = onLoginClick,
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("welcome_login_btn")
+      ) {
+        Text(
+          text = "I already have an account • Sign In",
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          color = LifesumStoneDark
+        )
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 1: Weight Goal
+// ---------------------------------------------------------------------------
+@Composable
+private fun Step1Goal(
+  selectedGoal: String,
+  onSelectGoal: (String) -> Unit
+) {
+  val options = listOf(
+    "I want to lose weight" to "Deficit-based calorie pacing with high satiety Indian foods",
+    "Fine, but want to eat healthy" to "Maintenance target with metabolic and micronutrient balance",
+    "I want more muscle mass" to "Hypertrophy-supportive surplus with elevated protein targets"
+  )
+
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .padding(24.dp),
+    verticalArrangement = Arrangement.SpaceBetween
+  ) {
+    Column {
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(
+        text = "How do you feel about your weight?",
+        fontSize = 26.sp,
+        fontWeight = FontWeight.Bold,
+        color = LifesumStoneDark,
+        lineHeight = 32.sp
+      )
+
+      Spacer(modifier = Modifier.height(28.dp))
+
+      options.forEach { (title, desc) ->
+        val isSelected = (selectedGoal == title)
+        Card(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onSelectGoal(title) }
+            .testTag("goal_${title.replace(" ", "_").lowercase()}"),
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) LifesumVibrantGreen else Color.White
+          ),
+          border = CardDefaults.outlinedCardBorder().copy(
+            brush = SolidColor(if (isSelected) LifesumVibrantGreen else LifesumStoneBorder)
+          ),
+          elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 3.dp else 1.dp)
+        ) {
+          Column(modifier = Modifier.padding(18.dp)) {
+            Text(
+              text = title,
+              fontSize = 17.sp,
+              fontWeight = FontWeight.Bold,
+              color = if (isSelected) Color.White else LifesumStoneDark
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+              text = desc,
+              fontSize = 12.sp,
+              color = if (isSelected) Color.White.copy(alpha = 0.9f) else LifesumStoneMuted
+            )
+          }
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+      }
+    }
+
+    Text(
+      text = "Your goal directly determines your daily energy target and macro ratios.",
+      fontSize = 13.sp,
+      color = LifesumStoneMuted,
+      textAlign = TextAlign.Center,
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(bottom = 16.dp)
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: Biometrics (Gender, Age, Weight, Height)
+// ---------------------------------------------------------------------------
+@Composable
+private fun Step2Biometrics(
+  gender: String,
+  age: Int,
+  weightKg: Float,
+  heightCm: Float,
+  isLbsUnit: Boolean,
+  onGenderChanged: (String) -> Unit,
+  onAgeChanged: (Int) -> Unit,
+  onWeightChanged: (Float) -> Unit,
+  onHeightChanged: (Float) -> Unit,
+  onUnitToggled: (Boolean) -> Unit,
+  onNext: () -> Unit
+) {
+  val displayWeight = if (isLbsUnit) weightKg * 2.20462f else weightKg
+  val unitLabel = if (isLbsUnit) "lbs" else "kg"
+
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .verticalScroll(rememberScrollState())
+      .padding(24.dp),
+    verticalArrangement = Arrangement.SpaceBetween
+  ) {
+    Column {
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(
+        text = "Your body metrics",
+        fontSize = 26.sp,
+        fontWeight = FontWeight.Bold,
+        color = LifesumStoneDark,
+        lineHeight = 32.sp
+      )
+      Spacer(modifier = Modifier.height(6.dp))
+      Text(
+        text = "Used exclusively for Mifflin-St Jeor metabolic rate calculations.",
+        fontSize = 13.sp,
+        color = LifesumStoneMuted
+      )
+
+      Spacer(modifier = Modifier.height(24.dp))
+
+      // 1. Biological Gender
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+      ) {
+        val isFemale = gender.equals("Female", ignoreCase = true)
+        val isMale = gender.equals("Male", ignoreCase = true)
+
+        Box(
+          modifier = Modifier
+            .weight(1f)
+            .height(54.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (isFemale) LifesumVibrantGreen else Color.White)
+            .border(1.dp, if (isFemale) LifesumVibrantGreen else LifesumStoneBorder, RoundedCornerShape(14.dp))
+            .clickable { onGenderChanged("Female") }
+            .testTag("gender_female"),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = "Female",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (isFemale) Color.White else LifesumStoneDark
+          )
+        }
+
+        Box(
+          modifier = Modifier
+            .weight(1f)
+            .height(54.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (isMale) LifesumVibrantGreen else Color.White)
+            .border(1.dp, if (isMale) LifesumVibrantGreen else LifesumStoneBorder, RoundedCornerShape(14.dp))
+            .clickable { onGenderChanged("Male") }
+            .testTag("gender_male"),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = "Male",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (isMale) Color.White else LifesumStoneDark
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(18.dp))
+
+      // 2. Age Stepper
+      Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(LifesumStoneBorder)),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+          Column {
+            Text(text = "Age", fontSize = 12.sp, color = LifesumStoneMuted)
+            Text(text = "$age years", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
+          }
+
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+              onClick = { if (age > 16) onAgeChanged(age - 1) },
+              shape = CircleShape,
+              modifier = Modifier.size(42.dp)
+            ) {
+              Text("−", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
+            }
+            OutlinedButton(
+              onClick = { if (age < 95) onAgeChanged(age + 1) },
+              shape = CircleShape,
+              modifier = Modifier.size(42.dp)
+            ) {
+              Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
+            }
+          }
+        }
+      }
+
+      Spacer(modifier = Modifier.height(18.dp))
+
+      // 3. Weight Card with Unit Switch
+      Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(LifesumStoneBorder)),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column {
+              Text(text = "Current Weight", fontSize = 12.sp, color = LifesumStoneMuted)
+              Text(
+                text = "${String.format(Locale.US, "%.1f", displayWeight)} $unitLabel",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = LifesumStoneDark
+              )
+            }
+
+            // kg / lbs switcher
+            Row(
+              modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(LifesumCreamBg)
+                .padding(3.dp)
+            ) {
+              Box(
+                modifier = Modifier
+                  .clip(RoundedCornerShape(8.dp))
+                  .background(if (!isLbsUnit) Color.White else Color.Transparent)
+                  .clickable { onUnitToggled(false) }
+                  .padding(horizontal = 12.dp, vertical = 4.dp)
+              ) {
+                Text(text = "kg", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (!isLbsUnit) LifesumStoneDark else LifesumStoneMuted)
+              }
+              Box(
+                modifier = Modifier
+                  .clip(RoundedCornerShape(8.dp))
+                  .background(if (isLbsUnit) Color.White else Color.Transparent)
+                  .clickable { onUnitToggled(true) }
+                  .padding(horizontal = 12.dp, vertical = 4.dp)
+              ) {
+                Text(text = "lbs", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isLbsUnit) LifesumStoneDark else LifesumStoneMuted)
+              }
+            }
+          }
+
+          Spacer(modifier = Modifier.height(8.dp))
+
+          Slider(
+            value = weightKg,
+            onValueChange = onWeightChanged,
+            valueRange = 35f..160f,
+            colors = SliderDefaults.colors(
+              thumbColor = LifesumVibrantGreen,
+              activeTrackColor = LifesumVibrantGreen,
+              inactiveTrackColor = LifesumStoneBorder
+            )
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(18.dp))
+
+      // 4. Height Card
+      Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(LifesumStoneBorder)),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+          Text(text = "Height", fontSize = 12.sp, color = LifesumStoneMuted)
+          Text(text = "${heightCm.toInt()} cm", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
+
+          Spacer(modifier = Modifier.height(6.dp))
+
+          Slider(
+            value = heightCm,
+            onValueChange = onHeightChanged,
+            valueRange = 120f..220f,
+            colors = SliderDefaults.colors(
+              thumbColor = LifesumVibrantGreen,
+              activeTrackColor = LifesumVibrantGreen,
+              inactiveTrackColor = LifesumStoneBorder
+            )
+          )
+        }
+      }
+    }
+
+    Button(
+      onClick = onNext,
+      shape = RoundedCornerShape(16.dp),
+      colors = ButtonDefaults.buttonColors(
+        containerColor = LifesumVibrantGreen,
+        contentColor = Color.White
+      ),
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(56.dp)
+        .padding(top = 24.dp)
+        .testTag("biometrics_next_btn")
+    ) {
+      Text("NEXT", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 3: Clinical Health & Safety (Conditions & Allergies)
+// ---------------------------------------------------------------------------
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Step3ClinicalSafety(
+  selectedConditions: Set<String>,
+  selectedAllergies: Set<String>,
+  onToggleCondition: (String) -> Unit,
+  onToggleAllergy: (String) -> Unit,
+  onNext: () -> Unit
+) {
+  val clinicalConditions = listOf(
+    "Diabetes Type 2",
+    "Hypertension",
+    "Chronic Kidney Disease (CKD)",
+    "High Cholesterol / Hyperlipidemia",
+    "Celiac Disease",
+    "None / General Wellness"
+  )
+
+  val allergies = listOf(
+    "Peanuts", "Tree Nuts", "Milk / Dairy", "Eggs", "Wheat / Gluten", "Fish", "Shellfish"
+  )
+
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .verticalScroll(rememberScrollState())
+      .padding(24.dp),
+    verticalArrangement = Arrangement.SpaceBetween
+  ) {
+    Column {
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(
+        text = "Medical conditions & allergies",
+        fontSize = 26.sp,
+        fontWeight = FontWeight.Bold,
+        color = LifesumStoneDark,
+        lineHeight = 32.sp
+      )
+      Spacer(modifier = Modifier.height(6.dp))
+      Text(
+        text = "NutriPath uses these to enforce clinical safety limits (DASH sodium, ADA glycemic index, KDIGO renal thresholds) and filter allergens.",
+        fontSize = 13.sp,
+        color = LifesumStoneMuted,
+        lineHeight = 18.sp
+      )
+
+      Spacer(modifier = Modifier.height(20.dp))
+
+      Text(
+        text = "Medical Conditions",
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Bold,
+        color = LifesumStoneDark
+      )
+      Spacer(modifier = Modifier.height(10.dp))
+
+      clinicalConditions.forEach { condition ->
+        val isSelected = selectedConditions.contains(condition)
+        Card(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onToggleCondition(condition) }
+            .testTag("condition_${condition.replace(" ", "_").lowercase()}"),
+          shape = RoundedCornerShape(14.dp),
+          colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) LifesumVibrantGreen else Color.White
+          ),
+          border = CardDefaults.outlinedCardBorder().copy(
+            brush = SolidColor(if (isSelected) LifesumVibrantGreen else LifesumStoneBorder)
+          )
+        ) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Box(
+              modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .background(if (isSelected) Color.White else LifesumCreamBg)
+                .border(1.dp, if (isSelected) Color.White else LifesumStoneBorder, CircleShape),
+              contentAlignment = Alignment.Center
+            ) {
+              if (isSelected) {
+                Icon(
+                  imageVector = Icons.Default.Check,
+                  contentDescription = null,
+                  tint = LifesumGreenDarkText,
+                  modifier = Modifier.size(14.dp)
+                )
+              }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+              text = condition,
+              fontSize = 15.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = if (isSelected) Color.White else LifesumStoneDark
+            )
+          }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+      }
+
+      Spacer(modifier = Modifier.height(20.dp))
+
+      Text(
+        text = "Food Allergies (Zero-tolerance exclusions)",
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Bold,
+        color = LifesumStoneDark
+      )
+      Spacer(modifier = Modifier.height(10.dp))
+
+      FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        allergies.forEach { allergy ->
+          val isSelected = selectedAllergies.contains(allergy)
+          Box(
+            modifier = Modifier
+              .clip(RoundedCornerShape(12.dp))
+              .background(if (isSelected) LifesumVibrantGreen else Color.White)
+              .border(1.dp, if (isSelected) LifesumVibrantGreen else LifesumStoneBorder, RoundedCornerShape(12.dp))
+              .clickable { onToggleAllergy(allergy) }
+              .padding(horizontal = 14.dp, vertical = 10.dp)
+              .testTag("allergy_${allergy.replace(" ", "_").lowercase()}"),
+            contentAlignment = Alignment.Center
+          ) {
+            Text(
+              text = allergy,
+              fontSize = 13.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = if (isSelected) Color.White else LifesumStoneDark
+            )
+          }
+        }
+      }
+    }
+
+    Button(
+      onClick = onNext,
+      shape = RoundedCornerShape(16.dp),
+      colors = ButtonDefaults.buttonColors(
+        containerColor = LifesumVibrantGreen,
+        contentColor = Color.White
+      ),
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(56.dp)
+        .padding(top = 24.dp)
+        .testTag("clinical_next_btn")
+    ) {
+      Text("NEXT", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 4: Desired Speed of Change
+// ---------------------------------------------------------------------------
+@Composable
+private fun Step4SpeedOfChange(
+  speedKgPerWeek: Float,
+  onSpeedChanged: (Float) -> Unit,
+  onBuildPlan: () -> Unit
+) {
+  val descriptor = when {
+    speedKgPerWeek < 0.35f -> "Lasting impact • Mild deficit"
+    speedKgPerWeek < 0.70f -> "Steady momentum • Recommended"
+    else -> "Accelerated pace • Intensive"
+  }
+
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .padding(24.dp),
+    verticalArrangement = Arrangement.SpaceBetween
+  ) {
+    Column {
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(
+        text = "Desired speed of change?",
+        fontSize = 26.sp,
+        fontWeight = FontWeight.Bold,
+        color = LifesumStoneDark,
+        lineHeight = 32.sp
+      )
+
+      Spacer(modifier = Modifier.height(64.dp))
+
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Text(
+          text = String.format(Locale.US, "%.2f kg/week", speedKgPerWeek),
+          fontSize = 40.sp,
+          fontWeight = FontWeight.ExtraBold,
+          color = LifesumStoneDark
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+          text = descriptor,
+          fontSize = 16.sp,
+          fontWeight = FontWeight.SemiBold,
+          color = LifesumGreenDarkText
+        )
+
+        Spacer(modifier = Modifier.height(36.dp))
+
+        Slider(
+          value = speedKgPerWeek,
+          onValueChange = onSpeedChanged,
+          valueRange = 0.10f..1.00f,
+          steps = 8,
+          modifier = Modifier.fillMaxWidth(),
+          colors = SliderDefaults.colors(
+            thumbColor = LifesumGreenDarkText,
+            activeTrackColor = LifesumGreenDarkText,
+            inactiveTrackColor = LifesumStoneBorder
+          )
+        )
+      }
+    }
+
+    Column {
+      Text(
+        text = "A balanced pace ensures sustainable fat loss without metabolic slowdown or muscle loss.",
+        fontSize = 13.sp,
+        color = LifesumStoneMuted,
+        textAlign = TextAlign.Center,
+        lineHeight = 18.sp,
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(bottom = 20.dp)
+      )
+
+      Button(
+        onClick = onBuildPlan,
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+          containerColor = LifesumVibrantGreen,
+          contentColor = Color.White
+        ),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(56.dp)
+          .testTag("build_my_plan_btn")
+      ) {
+        Text(
+          text = "BUILD MY PLAN",
+          fontSize = 16.sp,
+          fontWeight = FontWeight.Bold,
+          letterSpacing = 0.5.sp
+        )
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 5: Calculation Screen (0% -> 100%)
+// ---------------------------------------------------------------------------
+@Composable
+private fun Step5Calculation(progress: Int) {
+  val status = when {
+    progress < 35 -> "Calculating BMR with Mifflin-St Jeor..."
+    progress < 70 -> "Applying ICMR-NIN micronutrient standards..."
+    progress < 95 -> "Configuring clinical safety & DNI rules..."
+    else -> "Finalizing your plan"
+  }
+
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .padding(32.dp),
+    verticalArrangement = Arrangement.SpaceBetween,
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Spacer(modifier = Modifier.height(60.dp))
+
+    Text(
+      text = "$progress%",
+      fontSize = 84.sp,
+      fontWeight = FontWeight.Black,
+      color = LifesumStoneDark,
+      letterSpacing = (-2).sp
+    )
+
+    Text(
+      text = status,
+      fontSize = 16.sp,
+      fontWeight = FontWeight.Medium,
+      color = LifesumStoneDark,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.padding(bottom = 40.dp)
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 6: Plan Ready & Entry
+// ---------------------------------------------------------------------------
+@Composable
+private fun Step6PlanReady(
+  finalProfile: HealthProfile,
+  onGoogleSignIn: () -> Unit,
+  onEmailSignIn: () -> Unit,
+  onContinueAsGuest: () -> Unit
+) {
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .verticalScroll(rememberScrollState())
+      .padding(24.dp),
+    verticalArrangement = Arrangement.SpaceBetween,
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      Spacer(modifier = Modifier.height(10.dp))
+
+      Text(
+        text = "Your personalized plan is ready",
+        fontSize = 28.sp,
+        fontWeight = FontWeight.ExtraBold,
+        color = LifesumStoneDark,
+        textAlign = TextAlign.Center,
+        lineHeight = 34.sp
+      )
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      Text(
+        text = "Create an account to begin progress or start immediately as a guest",
+        fontSize = 14.sp,
+        color = LifesumStoneMuted,
+        textAlign = TextAlign.Center,
+        lineHeight = 20.sp
+      )
+
+      Spacer(modifier = Modifier.height(24.dp))
+
+      // Summary Card
+      Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(LifesumStoneBorder)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column {
+              Text(text = "Daily Calorie Target", fontSize = 12.sp, color = LifesumStoneMuted)
+              Text(
+                text = "${finalProfile.dailyCalorieTarget} kcal",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = LifesumStoneDark
+              )
+            }
+
+            Box(
+              modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(LifesumGreenLight)
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+              Text(
+                text = "Clinical Certified",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = LifesumGreenDarkText
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.height(14.dp))
+
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            MacroPill("Protein", "${finalProfile.proteinTargetG}g")
+            MacroPill("Carbs", "${finalProfile.carbsTargetG}g")
+            MacroPill("Fat", "${finalProfile.fatTargetG}g")
+            MacroPill("Sodium", "<${finalProfile.maxSodiumMg}mg")
+          }
+
+          if (finalProfile.medicalConditions.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(
+                imageVector = Icons.Default.HealthAndSafety,
+                contentDescription = null,
+                tint = LifesumGreenDarkText,
+                modifier = Modifier.size(16.dp)
+              )
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = "Active Rules: ${finalProfile.medicalConditions.joinToString(", ")}",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = LifesumStoneDark
+              )
+            }
+          }
+        }
+      }
+    }
+
+    // Action Buttons
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(top = 24.dp)
+    ) {
+      Button(
+        onClick = onGoogleSignIn,
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = LifesumStoneDark),
+        border = BorderStroke(1.dp, LifesumStoneBorder),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(54.dp)
+          .testTag("plan_ready_google_btn")
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Icon(Icons.Default.AccountCircle, contentDescription = null, tint = DeepTealPrimary, modifier = Modifier.size(20.dp))
+          Spacer(modifier = Modifier.width(10.dp))
+          Text(text = "Continue with Google", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        }
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      Button(
+        onClick = onEmailSignIn,
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = LifesumStoneDark),
+        border = BorderStroke(1.dp, LifesumStoneBorder),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(54.dp)
+          .testTag("plan_ready_email_btn")
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Icon(Icons.Default.Email, contentDescription = null, tint = LifesumStoneDark, modifier = Modifier.size(20.dp))
+          Spacer(modifier = Modifier.width(10.dp))
+          Text(text = "Continue with Email", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        }
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      Button(
+        onClick = onContinueAsGuest,
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = LifesumVibrantGreen, contentColor = Color.White),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(54.dp)
+          .testTag("plan_ready_guest_btn")
+      ) {
+        Text(text = "Continue as Guest", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+      }
+    }
+  }
+}
+
+@Composable
+private fun MacroPill(label: String, value: String) {
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    modifier = Modifier
+      .clip(RoundedCornerShape(10.dp))
+      .background(LifesumCreamBg)
+      .padding(horizontal = 10.dp, vertical = 6.dp)
+  ) {
+    Text(text = label, fontSize = 10.sp, color = LifesumStoneMuted)
+    Text(text = value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
   }
 }

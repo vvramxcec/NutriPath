@@ -20,33 +20,47 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.HealthAndSafety
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.components.AuthDialog
+import com.example.ui.components.DeleteAccountDialog
 import com.example.ui.theme.BorderSubtle
 import com.example.ui.theme.DarkCharcoalText
 import com.example.ui.theme.DeepTealDark
@@ -54,6 +68,8 @@ import com.example.ui.theme.DeepTealPrimary
 import com.example.ui.theme.LimeYellowAccent
 import com.example.ui.theme.LimeYellowBackground
 import com.example.ui.theme.StatusApprovedGreen
+import com.example.ui.theme.StatusRejectedBg
+import com.example.ui.theme.StatusRejectedRed
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.WarmWhiteCard
 import com.example.ui.viewmodel.NutriPathViewModel
@@ -68,6 +84,95 @@ fun AppMenuScreen(
   modifier: Modifier = Modifier
 ) {
   val profile by viewModel.healthProfile.collectAsStateWithLifecycle()
+  val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+  val isAuthenticating by viewModel.isAuthenticating.collectAsStateWithLifecycle()
+
+  var showAuthDialog by remember { mutableStateOf(false) }
+  var showDeleteDialog by remember { mutableStateOf(false) }
+  var authErrorMessage by remember { mutableStateOf<String?>(null) }
+
+  // Auth Dialog
+  if (showAuthDialog) {
+    AuthDialog(
+      isAuthenticating = isAuthenticating,
+      onDismiss = { showAuthDialog = false },
+      onGoogleSignIn = { context ->
+        viewModel.signInWithGoogle(
+          context = context,
+          onSuccess = { showAuthDialog = false },
+          onError = { error -> authErrorMessage = error }
+        )
+      },
+      onEmailSignIn = { email, pass ->
+        viewModel.signInWithEmail(
+          email = email,
+          pass = pass,
+          onSuccess = { showAuthDialog = false },
+          onError = { error -> authErrorMessage = error }
+        )
+      },
+      onEmailSignUp = { email, pass ->
+        viewModel.signUpWithEmail(
+          email = email,
+          pass = pass,
+          onSuccess = { showAuthDialog = false },
+          onError = { error -> authErrorMessage = error }
+        )
+      }
+    )
+  }
+
+  // Delete Account Confirmation Dialog
+  if (showDeleteDialog) {
+    DeleteAccountDialog(
+      isProcessing = isAuthenticating,
+      onDismiss = { showDeleteDialog = false },
+      onConfirmDelete = {
+        viewModel.deleteAccountAndPurgeData(
+          onSuccess = {
+            showDeleteDialog = false
+            onRestartOnboarding()
+          },
+          onError = { error ->
+            showDeleteDialog = false
+            authErrorMessage = error
+          }
+        )
+      }
+    )
+  }
+
+  // Error Alert Dialog
+  if (authErrorMessage != null) {
+    AlertDialog(
+      onDismissRequest = { authErrorMessage = null },
+      containerColor = WarmWhiteCard,
+      title = {
+        Text(
+          text = "Account Notice",
+          fontWeight = FontWeight.Bold,
+          fontSize = 17.sp,
+          color = DarkCharcoalText
+        )
+      },
+      text = {
+        Text(
+          text = authErrorMessage ?: "",
+          color = TextMuted,
+          fontSize = 13.sp,
+          lineHeight = 18.sp
+        )
+      },
+      confirmButton = {
+        TextButton(
+          onClick = { authErrorMessage = null },
+          modifier = Modifier.testTag("dismiss_auth_error_button")
+        ) {
+          Text("OK", color = DeepTealPrimary, fontWeight = FontWeight.Bold)
+        }
+      }
+    )
+  }
 
   Column(
     modifier = modifier
@@ -111,12 +216,161 @@ fun AppMenuScreen(
       contentPadding = PaddingValues(16.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      // 1. Patient Profile Summary Card
+      // 1. Account & Cloud Backup Card
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(BorderSubtle)),
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("account_sync_card")
+        ) {
+          Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.SpaceBetween,
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(
+                      if (currentUser != null) DeepTealPrimary else LimeYellowBackground
+                    ),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Icon(
+                    imageVector = if (currentUser != null) Icons.Default.CloudDone else Icons.Default.CloudOff,
+                    contentDescription = null,
+                    tint = if (currentUser != null) LimeYellowAccent else DeepTealPrimary,
+                    modifier = Modifier.size(22.dp)
+                  )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                  Text(
+                    text = if (currentUser != null) {
+                      currentUser?.email ?: "Signed In User"
+                    } else {
+                      "Guest / Local Storage"
+                    },
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkCharcoalText
+                  )
+                  Text(
+                    text = if (currentUser != null) {
+                      "Cloud sync active • Firestore secured"
+                    } else {
+                      "Data stored only on this device"
+                    },
+                    fontSize = 12.sp,
+                    color = if (currentUser != null) StatusApprovedGreen else TextMuted,
+                    fontWeight = if (currentUser != null) FontWeight.Medium else FontWeight.Normal
+                  )
+                }
+              }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (currentUser != null) {
+              // Signed-in State: Sign Out & Delete Account Actions
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+              ) {
+                OutlinedButton(
+                  onClick = { viewModel.signOut() },
+                  shape = RoundedCornerShape(10.dp),
+                  modifier = Modifier
+                    .weight(1f)
+                    .testTag("menu_sign_out_button")
+                ) {
+                  Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    tint = DeepTealDark,
+                    modifier = Modifier.size(16.dp)
+                  )
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text(
+                    text = "Sign Out",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = DeepTealDark
+                  )
+                }
+
+                OutlinedButton(
+                  onClick = { showDeleteDialog = true },
+                  shape = RoundedCornerShape(10.dp),
+                  colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusRejectedRed),
+                  border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(StatusRejectedRed.copy(alpha = 0.5f))),
+                  modifier = Modifier
+                    .weight(1f)
+                    .testTag("menu_delete_account_button")
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.DeleteOutline,
+                    contentDescription = null,
+                    tint = StatusRejectedRed,
+                    modifier = Modifier.size(16.dp)
+                  )
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text(
+                    text = "Delete",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = StatusRejectedRed
+                  )
+                }
+              }
+            } else {
+              // Guest State: Sign In / Register Button
+              Button(
+                onClick = { showAuthDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                  containerColor = DeepTealPrimary,
+                  contentColor = Color.White
+                ),
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .testTag("menu_sign_in_button")
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Login,
+                  contentDescription = null,
+                  tint = LimeYellowAccent,
+                  modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                  text = "Sign In / Create Account",
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 13.sp
+                )
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Patient Profile Summary Card
+      item {
+        Card(
+          shape = RoundedCornerShape(18.dp),
+          colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
+          border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(BorderSubtle)),
           modifier = Modifier.fillMaxWidth()
         ) {
           Column(modifier = Modifier.padding(16.dp)) {
@@ -213,7 +467,7 @@ fun AppMenuScreen(
         }
       }
 
-      // 2. Navigation Action Cards
+      // 3. Navigation Action Cards Header
       item {
         Text(
           text = "Clinical Navigation",
@@ -253,13 +507,13 @@ fun AppMenuScreen(
         )
       }
 
-      // 3. Clinical Architecture & Nutrition Engine Info
+      // 4. Clinical Architecture & Nutrition Engine Info
       item {
         Spacer(modifier = Modifier.height(4.dp))
         Card(
           shape = RoundedCornerShape(16.dp),
           colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(BorderSubtle)),
           modifier = Modifier.fillMaxWidth()
         ) {
           Row(
@@ -319,7 +573,7 @@ fun MenuNavigationItem(
       .testTag(testTag),
     shape = RoundedCornerShape(16.dp),
     colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
-    border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+    border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(BorderSubtle)),
     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
   ) {
     Row(

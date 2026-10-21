@@ -99,6 +99,7 @@ fun NutriPathApp(viewModel: NutriPathViewModel) {
   if (isOnboardingActive) {
     OnboardingScreen(
       initialProfile = profile,
+      viewModel = viewModel,
       onCompleteOnboarding = { finishedProfile ->
         viewModel.completeOnboarding(finishedProfile)
       },

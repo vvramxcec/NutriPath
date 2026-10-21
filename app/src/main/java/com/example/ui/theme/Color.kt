@@ -53,3 +53,16 @@ val MacroCarbsBg = Color(0xFFFEF08A)
 val MacroCarbsText = Color(0xFF854D0E)
 val MacroFatBg = Color(0xFFFCE7F3)
 val MacroFatText = Color(0xFF9D174D)
+
+// Lifesum Onboarding Design System Tokens
+val LifesumCreamBg = Color(0xFFFBF8F2)
+val LifesumVibrantGreen = Color(0xFF22C55E)
+val LifesumGreenHover = Color(0xFF16A34A)
+val LifesumGreenLight = Color(0xFFDCFCE7)
+val LifesumGreenDarkText = Color(0xFF14532D)
+val LifesumStoneDark = Color(0xFF1C1917)
+val LifesumStoneMuted = Color(0xFF78716C)
+val LifesumStoneBorder = Color(0xFFE7E5E4)
+val LifesumLavender = Color(0xFFF3E8FF)
+val LifesumLavenderCard = Color(0xFFFAF5FF)
+
