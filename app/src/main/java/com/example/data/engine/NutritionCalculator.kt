@@ -6,7 +6,7 @@ import com.example.data.repository.FoodCompositionRepository
 
 /**
  * Deterministic Nutrition Calculation Engine.
- * Implements PRD Section 8:
+ * Implements PRD Section 8 & NutriGen principles:
  * Ingredient nutrient = (ingredient quantity in grams / 100) * nutrient value per 100 g
  * Total recipe value = sum of ingredient contributions, adjusted for the number of servings.
  */
@@ -24,7 +24,11 @@ object NutritionCalculator {
     val sugarG: Float,
     val sodiumMg: Float,
     val potassiumMg: Float,
-    val saturatedFatG: Float,
+    val calciumMg: Float = 0f,
+    val ironMg: Float = 0f,
+    val vitaminCMg: Float = 0f,
+    val vitaminKMcg: Float = 0f,
+    val saturatedFatG: Float = 0f,
     val dataSource: String
   )
 
@@ -45,6 +49,10 @@ object NutritionCalculator {
     var totalSugar = 0f
     var totalSodium = 0f
     var totalPotassium = 0f
+    var totalCalcium = 0f
+    var totalIron = 0f
+    var totalVitC = 0f
+    var totalVitK = 0f
     var totalSatFat = 0f
 
     val contributions = mutableListOf<IngredientNutrientContribution>()
@@ -61,6 +69,10 @@ object NutritionCalculator {
         val sug = ingredient.sugarPer100g * factor
         val sod = ingredient.sodiumMgPer100g * factor
         val pot = ingredient.potassiumMgPer100g * factor
+        val ca = ingredient.calciumMgPer100g * factor
+        val fe = ingredient.ironMgPer100g * factor
+        val vc = ingredient.vitaminCMgPer100g * factor
+        val vk = ingredient.vitaminKMcgPer100g * factor
         val sat = ingredient.saturatedFatPer100g * factor
 
         totalCalories += cal
@@ -71,6 +83,10 @@ object NutritionCalculator {
         totalSugar += sug
         totalSodium += sod
         totalPotassium += pot
+        totalCalcium += ca
+        totalIron += fe
+        totalVitC += vc
+        totalVitK += vk
         totalSatFat += sat
 
         contributions.add(
@@ -86,6 +102,10 @@ object NutritionCalculator {
             sugarG = sug / effectiveServings,
             sodiumMg = sod / effectiveServings,
             potassiumMg = pot / effectiveServings,
+            calciumMg = ca / effectiveServings,
+            ironMg = fe / effectiveServings,
+            vitaminCMg = vc / effectiveServings,
+            vitaminKMcg = vk / effectiveServings,
             saturatedFatG = sat / effectiveServings,
             dataSource = ingredient.dataSource
           )
@@ -102,6 +122,10 @@ object NutritionCalculator {
       sugarGrams = totalSugar / effectiveServings,
       sodiumMg = totalSodium / effectiveServings,
       potassiumMg = totalPotassium / effectiveServings,
+      calciumMg = totalCalcium / effectiveServings,
+      ironMg = totalIron / effectiveServings,
+      vitaminCMg = totalVitC / effectiveServings,
+      vitaminKMcg = totalVitK / effectiveServings,
       saturatedFatGrams = totalSatFat / effectiveServings
     )
 

@@ -2,12 +2,14 @@ package com.example.data.model
 
 /**
  * Verified food composition reference data per 100g.
- * Sourced from Indian Food Composition Tables (IFCT / ICMR-NIN) and USDA FoodData Central.
+ * Sourced from Indian Food Composition Tables (IFCT / ICMR-NIN 2017),
+ * Anuvaad Indian Food Dataset, and USDA FoodData Central.
  */
 data class FoodIngredient(
   val id: String,
   val name: String,
-  val category: String, // Grain, Pulse, Vegetable, Dairy, Meat/Fish, Oil, Spice
+  val regionalName: String = "", // e.g. "Matta Ari", "Palak / Cheera", "Payar"
+  val category: String, // Grain, Pulse, Vegetable, Green Leafy, Dairy, Meat/Fish, Oil, Spice, Fruit
   val caloriesPer100g: Float,
   val proteinPer100g: Float,
   val carbsPer100g: Float,
@@ -16,11 +18,15 @@ data class FoodIngredient(
   val sugarPer100g: Float,
   val sodiumMgPer100g: Float,
   val potassiumMgPer100g: Float,
+  val calciumMgPer100g: Float = 0f,
+  val ironMgPer100g: Float = 0f,
+  val vitaminCMgPer100g: Float = 0f,
+  val vitaminKMcgPer100g: Float = 0f, // Essential for NutriOrion Warfarin DNI safety checks
   val saturatedFatPer100g: Float = 0f,
   val allergens: List<String> = emptyList(),
   val glycemicIndex: String = "Low", // Low, Medium, High
   val isGlutenFree: Boolean = true,
-  val dataSource: String = "IFCT ICMR-NIN 2017 & USDA FoodData"
+  val dataSource: String = "Anuvaad & ICMR-NIN 2017"
 )
 
 /**
@@ -31,11 +37,13 @@ data class RecipeIngredientItem(
   val displayName: String,
   val quantityGrams: Float,
   val displayUnit: String = "g", // e.g., "150g", "1 cup (150g)"
-  val preparationNote: String = ""
+  val preparationNote: String = "",
+  val isOptional: Boolean = false,
+  val isSubstituted: Boolean = false
 )
 
 /**
- * Calculated aggregate nutrient values.
+ * Calculated aggregate nutrient values per serving or scaled.
  */
 data class CalculatedNutrients(
   val caloriesKcal: Float,
@@ -46,6 +54,10 @@ data class CalculatedNutrients(
   val sugarGrams: Float,
   val sodiumMg: Float,
   val potassiumMg: Float,
+  val calciumMg: Float = 0f,
+  val ironMg: Float = 0f,
+  val vitaminCMg: Float = 0f,
+  val vitaminKMcg: Float = 0f,
   val saturatedFatGrams: Float = 0f
 ) {
   fun scaledByServings(servings: Float): CalculatedNutrients {
@@ -59,6 +71,10 @@ data class CalculatedNutrients(
       sugarGrams = sugarGrams * servings,
       sodiumMg = sodiumMg * servings,
       potassiumMg = potassiumMg * servings,
+      calciumMg = calciumMg * servings,
+      ironMg = ironMg * servings,
+      vitaminCMg = vitaminCMg * servings,
+      vitaminKMcg = vitaminKMcg * servings,
       saturatedFatGrams = saturatedFatGrams * servings
     )
   }
@@ -78,5 +94,6 @@ data class Recipe(
   val preparationSteps: List<String>,
   val calculatedNutrientsPerServing: CalculatedNutrients,
   val suitabilityNotes: String = "",
-  val primaryTags: List<String> = emptyList()
+  val primaryTags: List<String> = emptyList(),
+  val excludedIngredientIds: List<String> = emptyList() // HealthGenie circular interactive state
 )

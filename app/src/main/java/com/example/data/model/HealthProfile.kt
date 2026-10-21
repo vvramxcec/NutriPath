@@ -5,19 +5,20 @@ import androidx.room.PrimaryKey
 
 /**
  * Health profile representing user health parameters, medical conditions,
- * food allergies, dietary restrictions, clinical nutrient targets, and onboarding state.
+ * medications, food allergies, dietary restrictions, clinical nutrient targets, and onboarding state.
  */
 @Entity(tableName = "health_profile")
 data class HealthProfile(
   @PrimaryKey
   val id: Int = 1,
   val name: String = "Patient / User",
-  val age: Int = 36,
+  val age: Int = 42,
   val gender: String = "Male", // "Male", "Female", "Other"
   val weightKg: Float = 72.0f,
   val heightCm: Float = 172.0f,
   val activityLevel: String = "Moderately Active", // Sedentary, Lightly Active, Moderately Active, Very Active
   val medicalConditions: List<String> = listOf("Diabetes Type 2", "Hypertension"),
+  val medications: List<String> = listOf("Metformin"), // e.g. Warfarin, Spironolactone, Lisinopril, Atorvastatin, Metformin
   val allergies: List<String> = listOf("Peanuts"),
   val dietaryPreference: String = "Kerala / South Indian", // Kerala / South Indian, Indian Balanced, Vegetarian, Vegan, Eggetarian, Non-Vegetarian
   val dietaryRestrictions: List<String> = listOf("Low Sodium (< 1500mg)", "Low Glycemic Index"),
@@ -28,6 +29,13 @@ data class HealthProfile(
   val carbsTargetG: Int = 220,
   val fatTargetG: Int = 55,
   val maxSodiumMg: Int = 1500,
+  val maxPotassiumMg: Int = 2800, // Important for CKD and K-Sparing Diuretics
+  val systolicBp: Int = 135,
+  val diastolicBp: Int = 85,
+  val hba1c: Float = 6.8f,
+  val serumPotassium: Float = 4.2f, // mEq/L normal range 3.5 - 5.0
+  val excludedIngredients: List<String> = emptyList(), // HealthGenie circular interactive excluded items
+  val preferredIngredients: List<String> = emptyList(), // HealthGenie circular preferred items
   val consentGiven: Boolean = true,
   val hasCompletedOnboarding: Boolean = false,
   val lastUpdatedMillis: Long = System.currentTimeMillis()
@@ -50,6 +58,24 @@ object MedicalConditionCatalog {
     "High Cholesterol / Hyperlipidemia" to "Restricts saturated fatty acids (< 4.5g/serving) and prioritizes monounsaturated olive fats.",
     "Celiac Disease" to "Strict 100% zero-gluten protocol; eliminates all wheat, barley, and semolina ingredients.",
     "GERD / Acid Reflux" to "Eliminates high-acidity raw tomatoes and excessive fiery culinary irritants."
+  )
+
+  val COMMON_MEDICATIONS = listOf(
+    "None",
+    "Metformin (Anti-diabetic)",
+    "Warfarin / Coumadin (Anticoagulant)",
+    "Lisinopril / ACE Inhibitor (Antihypertensive)",
+    "Spironolactone / Diuretic (Potassium-Sparing)",
+    "Atorvastatin / Statin (Cholesterol)",
+    "Amlodipine (Calcium Channel Blocker)",
+    "Levothyroxine (Thyroid)"
+  )
+
+  val MEDICATION_WARNINGS = mapOf(
+    "Warfarin / Coumadin (Anticoagulant)" to "Critical interaction with Vitamin K: High-intake greens (Spinach/Palak, Kale, Cheera) counteract medication and increase blood clot risk.",
+    "Spironolactone / Diuretic (Potassium-Sparing)" to "Hyperkalemia hazard: Restrict high-potassium foods (potassium salt substitutes, bananas, coconut water).",
+    "Lisinopril / ACE Inhibitor (Antihypertensive)" to "Risk of elevated potassium: Avoid potassium-based salt substitutes.",
+    "Atorvastatin / Statin (Cholesterol)" to "Severe interaction with Grapefruit / pomelo: Blocks enzyme CYP3A4, causing dangerous medication accumulation."
   )
 
   val AVAILABLE_ALLERGIES = listOf(

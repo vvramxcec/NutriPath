@@ -5,10 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.db.NutriPathDatabase
 import com.example.data.engine.MealRecommendationEngine
-import com.example.data.engine.MealSafetyValidator
+import com.example.data.model.FoodIngredient
 import com.example.data.model.HealthProfile
 import com.example.data.model.MealPlanEntity
-import com.example.data.model.Recipe
+import com.example.data.repository.FoodCompositionRepository
 import com.example.data.repository.HealthProfileRepository
 import com.example.data.repository.MealPlanRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,7 +57,7 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
   val mealHistory: StateFlow<List<MealPlanEntity>> = mealPlanRepo.getAllConsumedHistory()
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-  // Consumed totals for selected date (Only meals marked 'CONSUMED' per PRD Section 4.3)
+  // Consumed totals for selected date (Only meals marked 'CONSUMED')
   val consumedCalories: StateFlow<Float> = currentMeals.combine(MutableStateFlow(Unit)) { meals, _ ->
     meals.filter { it.status == MealPlanEntity.STATUS_CONSUMED }.sumOf { it.caloriesKcal.toDouble() }.toFloat()
   }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
@@ -98,8 +98,17 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
   private val _isOnboardingActive = MutableStateFlow(false)
   val isOnboardingActive: StateFlow<Boolean> = _isOnboardingActive.asStateFlow()
 
+  // Anuvaad Dataset count state
+  private val _anuvaadDatasetCount = MutableStateFlow(FoodCompositionRepository.getAllIngredients().size)
+  val anuvaadDatasetCount: StateFlow<Int> = _anuvaadDatasetCount.asStateFlow()
+
   init {
     viewModelScope.launch {
+      NutriPathDatabase.seedIndianFoodDatasetIfEmpty(application, database)
+      val indianFoods = database.indianFoodDao().getAllFoodsOnce()
+      FoodCompositionRepository.registerIndianEntities(indianFoods)
+      _anuvaadDatasetCount.value = FoodCompositionRepository.getAllIngredients().size
+
       val today = dateFormat.format(Date())
       val existing = database.healthProfileDao().getHealthProfileOnce()
       if (existing == null) {
@@ -115,7 +124,6 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
 
   private suspend fun seedInitialMealsIfEmpty(today: String) {
     val existing = database.mealPlanDao().getMealsForDate(today)
-    // Check if empty and populate breakfast and lunch for rich first launch experience
     val initialProfile = healthProfileRepo.getProfileOnce()
     val fullPlan = MealRecommendationEngine.generateFullDayPlan(today, initialProfile)
 
@@ -131,7 +139,7 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       fatGrams = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.fatGrams,
       fiberGrams = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.fiberGrams,
       sodiumMg = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.sodiumMg,
-      status = MealPlanEntity.STATUS_CONSUMED, // Mark breakfast logged
+      status = MealPlanEntity.STATUS_CONSUMED,
       validationStatus = fullPlan.breakfast.validationResult.overallStatus.name,
       suitabilityExplanation = fullPlan.breakfast.validationResult.suitabilityExplanation,
       ingredientsSummary = fullPlan.breakfast.recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
@@ -150,7 +158,7 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       fatGrams = fullPlan.lunch.recipe.calculatedNutrientsPerServing.fatGrams,
       fiberGrams = fullPlan.lunch.recipe.calculatedNutrientsPerServing.fiberGrams,
       sodiumMg = fullPlan.lunch.recipe.calculatedNutrientsPerServing.sodiumMg,
-      status = MealPlanEntity.STATUS_CONSUMED, // Mark lunch logged
+      status = MealPlanEntity.STATUS_CONSUMED,
       validationStatus = fullPlan.lunch.validationResult.overallStatus.name,
       suitabilityExplanation = fullPlan.lunch.validationResult.suitabilityExplanation,
       ingredientsSummary = fullPlan.lunch.recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
@@ -169,7 +177,7 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       fatGrams = fullPlan.dinner.recipe.calculatedNutrientsPerServing.fatGrams,
       fiberGrams = fullPlan.dinner.recipe.calculatedNutrientsPerServing.fiberGrams,
       sodiumMg = fullPlan.dinner.recipe.calculatedNutrientsPerServing.sodiumMg,
-      status = MealPlanEntity.STATUS_PLANNED, // Planned dinner
+      status = MealPlanEntity.STATUS_PLANNED,
       validationStatus = fullPlan.dinner.validationResult.overallStatus.name,
       suitabilityExplanation = fullPlan.dinner.validationResult.suitabilityExplanation,
       ingredientsSummary = fullPlan.dinner.recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
@@ -215,6 +223,55 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       }
       _isGenerating.value = false
     }
+  }
+
+  /**
+   * HealthGenie Circular Interactive Adaptation:
+   * Dynamically adapts the candidate recipe when user clicks "Exclude" on an ingredient.
+   */
+  fun adaptCandidateWithExclusion(candidateIndex: Int, excludedIngredientId: String) {
+    val currentList = _generatedCandidates.value
+    if (candidateIndex in currentList.indices) {
+      val target = currentList[candidateIndex]
+      val adapted = MealRecommendationEngine.adaptRecipeWithExclusion(target, excludedIngredientId, healthProfile.value)
+      val updatedList = currentList.toMutableList()
+      updatedList[candidateIndex] = adapted
+      _generatedCandidates.value = updatedList
+    }
+  }
+
+  /**
+   * HealthGenie Persistent Ingredient Exclusion:
+   * Permanently adds an ingredient to user's profile exclusions and updates database.
+   */
+  fun togglePersistentExclusion(ingredientName: String) {
+    viewModelScope.launch {
+      val profile = healthProfile.value
+      val currentExclusions = profile.excludedIngredients.toMutableList()
+      if (currentExclusions.contains(ingredientName)) {
+        currentExclusions.remove(ingredientName)
+      } else {
+        currentExclusions.add(ingredientName)
+      }
+      val updated = profile.copy(excludedIngredients = currentExclusions)
+      healthProfileRepo.saveProfile(updated)
+      generateRecommendations()
+    }
+  }
+
+  /**
+   * Ingests CSV dataset from Anuvaad into the runtime food composition registry.
+   */
+  fun ingestAnuvaadCsv(csvContent: String): FoodCompositionRepository.IngestionSummary {
+    val summary = FoodCompositionRepository.importFromCsv(csvContent)
+    _anuvaadDatasetCount.value = FoodCompositionRepository.getAllIngredients().size
+    // Regenerate recommendations with enriched dataset
+    generateRecommendations()
+    return summary
+  }
+
+  fun searchAnuvaadFoods(query: String, category: String? = null): List<FoodIngredient> {
+    return FoodCompositionRepository.searchIngredients(query, category)
   }
 
   fun saveCandidateToPlan(candidate: MealRecommendationEngine.RecommendedMealCandidate, targetDate: String = _selectedDate.value, asConsumed: Boolean = false) {
@@ -306,7 +363,6 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
   fun saveProfile(profile: HealthProfile) {
     viewModelScope.launch {
       healthProfileRepo.saveProfile(profile)
-      // When profile changes, re-evaluate recommendation list if active
       generateRecommendations(_selectedGenerationType.value)
     }
   }
@@ -317,7 +373,6 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       healthProfileRepo.saveProfile(finished)
       _isOnboardingActive.value = false
       val today = dateFormat.format(Date())
-      // Regenerate today's meals tailored to new health profile
       database.mealPlanDao().deleteMealForDateAndType(today, "Breakfast")
       database.mealPlanDao().deleteMealForDateAndType(today, "Lunch")
       database.mealPlanDao().deleteMealForDateAndType(today, "Dinner")

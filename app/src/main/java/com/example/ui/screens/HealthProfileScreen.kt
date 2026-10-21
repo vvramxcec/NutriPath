@@ -19,10 +19,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
@@ -69,7 +72,6 @@ import com.example.ui.theme.ChipUnselectedText
 import com.example.ui.theme.DarkCharcoalText
 import com.example.ui.theme.DeepTealDark
 import com.example.ui.theme.DeepTealPrimary
-import com.example.ui.theme.LimeYellowAccent
 import com.example.ui.theme.LimeYellowBackground
 import com.example.ui.theme.StatusRejectedRed
 import com.example.ui.theme.StatusWarningAmber
@@ -95,9 +97,15 @@ fun HealthProfileScreen(
   var activityLevel by remember(originalProfile) { mutableStateOf(originalProfile.activityLevel) }
 
   var selectedConditions by remember(originalProfile) { mutableStateOf(originalProfile.medicalConditions.toSet()) }
+  var selectedMedications by remember(originalProfile) { mutableStateOf(originalProfile.medications.toSet()) }
   var selectedAllergies by remember(originalProfile) { mutableStateOf(originalProfile.allergies.toSet()) }
   var dietaryPreference by remember(originalProfile) { mutableStateOf(originalProfile.dietaryPreference) }
   var nutritionGoal by remember(originalProfile) { mutableStateOf(originalProfile.nutritionGoal) }
+
+  var systolicBpText by remember(originalProfile) { mutableStateOf(originalProfile.systolicBp.toString()) }
+  var diastolicBpText by remember(originalProfile) { mutableStateOf(originalProfile.diastolicBp.toString()) }
+  var hba1cText by remember(originalProfile) { mutableStateOf(originalProfile.hba1c.toString()) }
+  var potassiumText by remember(originalProfile) { mutableStateOf(originalProfile.serumPotassium.toString()) }
 
   var dailyCaloriesText by remember(originalProfile) { mutableStateOf(originalProfile.dailyCalorieTarget.toString()) }
   var maxSodiumText by remember(originalProfile) { mutableStateOf(originalProfile.maxSodiumMg.toString()) }
@@ -111,7 +119,7 @@ fun HealthProfileScreen(
     focusedTextColor = DarkCharcoalText,
     unfocusedTextColor = DarkCharcoalText,
     focusedLabelColor = DeepTealDark,
-    unfocusedLabelColor = DarkCharcoalText.copy(alpha = 0.8f),
+    unfocusedLabelColor = DarkCharcoalText,
     focusedBorderColor = DeepTealPrimary,
     unfocusedBorderColor = CardBorder,
     focusedContainerColor = Color(0xFFFAFCF7),
@@ -166,9 +174,9 @@ fun HealthProfileScreen(
                     color = DarkCharcoalText
                   )
                   Text(
-                    text = "Controls clinical rules & recommendations",
+                    text = "Governs clinical safety gates & recipe synthesis",
                     fontSize = 13.sp,
-                    color = TextMuted,
+                    color = DarkCharcoalText.copy(alpha = 0.85f),
                     fontWeight = FontWeight.Medium
                   )
                 }
@@ -194,7 +202,7 @@ fun HealthProfileScreen(
         }
       }
 
-      // 2. Body Metrics & Demographics
+      // 2. Personal Metrics
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
@@ -207,7 +215,7 @@ fun HealthProfileScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
           ) {
             Text(
-              text = "Personal Metrics",
+              text = "Personal & Anthropometric Metrics",
               fontSize = 16.sp,
               fontWeight = FontWeight.Bold,
               color = DarkCharcoalText
@@ -216,7 +224,7 @@ fun HealthProfileScreen(
             OutlinedTextField(
               value = name,
               onValueChange = { name = it },
-              label = { Text("Full Name / Label", fontWeight = FontWeight.SemiBold) },
+              label = { Text("Full Name / Label", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
               modifier = Modifier.fillMaxWidth().testTag("profile_name_input"),
               colors = textFieldColors,
               shape = RoundedCornerShape(12.dp)
@@ -229,7 +237,7 @@ fun HealthProfileScreen(
               OutlinedTextField(
                 value = ageText,
                 onValueChange = { ageText = it },
-                label = { Text("Age (yrs)", fontWeight = FontWeight.SemiBold) },
+                label = { Text("Age (yrs)", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
                 modifier = Modifier.weight(1f).testTag("profile_age_input"),
                 colors = textFieldColors,
                 shape = RoundedCornerShape(12.dp)
@@ -237,7 +245,7 @@ fun HealthProfileScreen(
               OutlinedTextField(
                 value = weightText,
                 onValueChange = { weightText = it },
-                label = { Text("Weight (kg)", fontWeight = FontWeight.SemiBold) },
+                label = { Text("Weight (kg)", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
                 modifier = Modifier.weight(1f).testTag("profile_weight_input"),
                 colors = textFieldColors,
                 shape = RoundedCornerShape(12.dp)
@@ -245,7 +253,7 @@ fun HealthProfileScreen(
               OutlinedTextField(
                 value = heightText,
                 onValueChange = { heightText = it },
-                label = { Text("Height (cm)", fontWeight = FontWeight.SemiBold) },
+                label = { Text("Height (cm)", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
                 modifier = Modifier.weight(1f).testTag("profile_height_input"),
                 colors = textFieldColors,
                 shape = RoundedCornerShape(12.dp)
@@ -293,7 +301,172 @@ fun HealthProfileScreen(
         }
       }
 
-      // 3. Medical Conditions
+      // 3. Clinical Biomarkers (NutriOrion Responsiveness to Patient Profiles)
+      item {
+        Card(
+          shape = RoundedCornerShape(18.dp),
+          colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            Text(
+              text = "Clinical Biomarkers (NutriOrion Integration)",
+              fontSize = 16.sp,
+              fontWeight = FontWeight.Bold,
+              color = DarkCharcoalText
+            )
+            Text(
+              text = "Biomarkers drive negative-correlation nutrient tailoring (e.g. higher BP reduces sodium allowance).",
+              fontSize = 13.sp,
+              color = DarkCharcoalText.copy(alpha = 0.85f)
+            )
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              OutlinedTextField(
+                value = systolicBpText,
+                onValueChange = { systolicBpText = it },
+                label = { Text("Systolic BP", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
+                modifier = Modifier.weight(1f),
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
+              )
+              OutlinedTextField(
+                value = diastolicBpText,
+                onValueChange = { diastolicBpText = it },
+                label = { Text("Diastolic BP", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
+                modifier = Modifier.weight(1f),
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
+              )
+            }
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              OutlinedTextField(
+                value = hba1cText,
+                onValueChange = { hba1cText = it },
+                label = { Text("HbA1c (%)", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
+                modifier = Modifier.weight(1f),
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
+              )
+              OutlinedTextField(
+                value = potassiumText,
+                onValueChange = { potassiumText = it },
+                label = { Text("Serum K+ (mEq/L)", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
+                modifier = Modifier.weight(1f),
+                colors = textFieldColors,
+                shape = RoundedCornerShape(12.dp)
+              )
+            }
+          }
+        }
+      }
+
+      // 4. Pharmacological Medications & DNI Safety Gate (NutriOrion)
+      item {
+        Card(
+          shape = RoundedCornerShape(18.dp),
+          colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(Icons.Default.Medication, contentDescription = null, tint = DeepTealDark, modifier = Modifier.size(20.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = "Prescribed Medications & DNI Rules",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkCharcoalText
+              )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+              text = "Prevents the 'Healthy Food Trap' by locking out pharmacological contraindications (e.g. Warfarin ↔ Vitamin K).",
+              fontSize = 13.sp,
+              color = DarkCharcoalText.copy(alpha = 0.85f),
+              lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            FlowRow(
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              MedicalConditionCatalog.COMMON_MEDICATIONS.forEach { med ->
+                val isSelected = selectedMedications.contains(med)
+                FilterChip(
+                  selected = isSelected,
+                  onClick = {
+                    selectedMedications = if (isSelected) {
+                      selectedMedications - med
+                    } else {
+                      if (med == "None") setOf("None") else (selectedMedications - "None") + med
+                    }
+                  },
+                  label = {
+                    Text(
+                      text = med,
+                      fontSize = 12.sp,
+                      fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                    )
+                  },
+                  colors = FilterChipDefaults.filterChipColors(
+                    containerColor = ChipUnselectedBg,
+                    labelColor = ChipUnselectedText,
+                    selectedContainerColor = DeepTealPrimary,
+                    selectedLabelColor = Color.White
+                  ),
+                  border = BorderStroke(
+                    width = if (isSelected) 1.5.dp else 1.dp,
+                    color = if (isSelected) DeepTealDark else ChipUnselectedBorder
+                  ),
+                  shape = RoundedCornerShape(10.dp)
+                )
+              }
+            }
+
+            // Show active warnings for selected medications
+            val activeWarnings = selectedMedications.mapNotNull { MedicalConditionCatalog.MEDICATION_WARNINGS[it] }
+            if (activeWarnings.isNotEmpty()) {
+              Spacer(modifier = Modifier.height(12.dp))
+              Text(
+                text = "Active Pharmacological Contraindication Gates:",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = StatusRejectedRed
+              )
+              Spacer(modifier = Modifier.height(6.dp))
+              activeWarnings.forEach { warn ->
+                Box(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFFEF2F2))
+                    .border(1.dp, Color(0xFFFECACA), RoundedCornerShape(8.dp))
+                    .padding(8.dp)
+                ) {
+                  Text(text = "⚠️ $warn", fontSize = 11.sp, color = Color(0xFF991B1B), lineHeight = 15.sp)
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 5. Medical Conditions
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
@@ -312,7 +485,7 @@ fun HealthProfileScreen(
             Text(
               text = "Selecting a condition activates reviewed deterministic clinical dietary rules for every meal proposal.",
               fontSize = 13.sp,
-              color = TextMuted,
+              color = DarkCharcoalText.copy(alpha = 0.85f),
               lineHeight = 18.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -348,46 +521,15 @@ fun HealthProfileScreen(
                     width = if (isSelected) 1.5.dp else 1.dp,
                     color = if (isSelected) DeepTealDark else ChipUnselectedBorder
                   ),
-                  shape = RoundedCornerShape(10.dp),
-                  modifier = Modifier.testTag("chip_condition_${condition.lowercase().take(6)}")
+                  shape = RoundedCornerShape(10.dp)
                 )
-              }
-            }
-
-            if (selectedConditions.isNotEmpty()) {
-              Spacer(modifier = Modifier.height(14.dp))
-              Text(
-                text = "Active Clinical Rules for Your Conditions:",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = DeepTealDark
-              )
-              Spacer(modifier = Modifier.height(6.dp))
-              selectedConditions.forEach { cond ->
-                val desc = MedicalConditionCatalog.CONDITION_DESCRIPTIONS[cond] ?: "Enforces clinical dietary bounds."
-                Box(
-                  modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 3.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF3F8F2))
-                    .border(1.dp, Color(0xFFD4E2D0), RoundedCornerShape(8.dp))
-                    .padding(8.dp)
-                ) {
-                  Text(
-                    text = "• $cond: $desc",
-                    fontSize = 12.sp,
-                    color = DarkCharcoalText,
-                    lineHeight = 16.sp
-                  )
-                }
               }
             }
           }
         }
       }
 
-      // 4. Food Allergies & Intolerances
+      // 6. Food Allergies
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
@@ -411,7 +553,7 @@ fun HealthProfileScreen(
               text = "Recipes containing any selected allergen are strictly BLOCKED by Rule-ALLERG-v1.2.",
               fontSize = 13.sp,
               color = StatusRejectedRed,
-              fontWeight = FontWeight.Medium,
+              fontWeight = FontWeight.SemiBold,
               lineHeight = 18.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -434,9 +576,6 @@ fun HealthProfileScreen(
                       fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
                     )
                   },
-                  leadingIcon = if (isSelected) {
-                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White) }
-                  } else null,
                   colors = FilterChipDefaults.filterChipColors(
                     containerColor = AllergyUnselectedBg,
                     labelColor = AllergyUnselectedText,
@@ -447,8 +586,7 @@ fun HealthProfileScreen(
                     width = if (isSelected) 1.5.dp else 1.dp,
                     color = if (isSelected) Color(0xFF7F1D1D) else AllergyUnselectedBorder
                   ),
-                  shape = RoundedCornerShape(10.dp),
-                  modifier = Modifier.testTag("chip_allergy_${allergy.lowercase().take(6)}")
+                  shape = RoundedCornerShape(10.dp)
                 )
               }
             }
@@ -456,7 +594,64 @@ fun HealthProfileScreen(
         }
       }
 
-      // 5. Dietary Style Preference
+      // 7. HealthGenie User Excluded Ingredients Manager
+      if (originalProfile.excludedIngredients.isNotEmpty()) {
+        item {
+          Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
+            border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(CardBorder)),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+              Text(
+                text = "HealthGenie Excluded Ingredients (${originalProfile.excludedIngredients.size})",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkCharcoalText
+              )
+              Text(
+                text = "Ingredients you excluded from recommendations. Tap '×' to unblock any item:",
+                fontSize = 12.sp,
+                color = TextMuted
+              )
+              Spacer(modifier = Modifier.height(10.dp))
+
+              FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+              ) {
+                originalProfile.excludedIngredients.forEach { item ->
+                  Box(
+                    modifier = Modifier
+                      .clip(RoundedCornerShape(8.dp))
+                      .background(Color(0xFFFEE2E2))
+                      .border(1.dp, Color(0xFFFECACA), RoundedCornerShape(8.dp))
+                      .padding(horizontal = 8.dp, vertical = 4.dp)
+                  ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                      Text(text = item, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF991B1B))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Box(
+                        modifier = Modifier
+                          .size(16.dp)
+                          .clip(CircleShape)
+                          .background(Color(0xFFFCA5A5))
+                          .clickable { viewModel.togglePersistentExclusion(item) },
+                        contentAlignment = Alignment.Center
+                      ) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Remove exclusion", tint = Color.White, modifier = Modifier.size(10.dp))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 8. Dietary & Culinary Preference
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
@@ -475,7 +670,7 @@ fun HealthProfileScreen(
             Text(
               text = "Tailors recipe generation to your regional cultural cuisine and culinary choices.",
               fontSize = 13.sp,
-              color = TextMuted
+              color = DarkCharcoalText.copy(alpha = 0.85f)
             )
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -513,7 +708,7 @@ fun HealthProfileScreen(
         }
       }
 
-      // 6. Clinician Nutrient Targets & Notes
+      // 9. Clinician Nutrient Targets & Notes
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
@@ -539,7 +734,7 @@ fun HealthProfileScreen(
               OutlinedTextField(
                 value = dailyCaloriesText,
                 onValueChange = { dailyCaloriesText = it },
-                label = { Text("Daily Cal Target (kcal)", fontWeight = FontWeight.SemiBold) },
+                label = { Text("Daily Cal Target (kcal)", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
                 modifier = Modifier.weight(1f),
                 colors = textFieldColors,
                 shape = RoundedCornerShape(12.dp)
@@ -547,7 +742,7 @@ fun HealthProfileScreen(
               OutlinedTextField(
                 value = maxSodiumText,
                 onValueChange = { maxSodiumText = it },
-                label = { Text("Max Sodium (mg)", fontWeight = FontWeight.SemiBold) },
+                label = { Text("Max Sodium (mg)", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
                 modifier = Modifier.weight(1f),
                 colors = textFieldColors,
                 shape = RoundedCornerShape(12.dp)
@@ -557,7 +752,7 @@ fun HealthProfileScreen(
             OutlinedTextField(
               value = clinicianNotes,
               onValueChange = { clinicianNotes = it },
-              label = { Text("Clinician Dietary Notes / Instructions", fontWeight = FontWeight.SemiBold) },
+              label = { Text("Clinician Dietary Notes / Instructions", fontWeight = FontWeight.Bold, color = DarkCharcoalText) },
               modifier = Modifier.fillMaxWidth(),
               maxLines = 3,
               colors = textFieldColors,
@@ -567,7 +762,7 @@ fun HealthProfileScreen(
         }
       }
 
-      // 7. Privacy & Explicit Health Data Consent (PRD Section 11)
+      // 10. Privacy & Consent
       item {
         Card(
           shape = RoundedCornerShape(18.dp),
@@ -590,9 +785,9 @@ fun HealthProfileScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                  text = "I consent to processing health conditions strictly for offline nutrition validation & personalized meal generation. Health data is never sold or used for public AI training.",
+                  text = "I consent to processing health conditions strictly for nutrition validation & meal generation. Data is saved locally and never shared publicly.",
                   fontSize = 13.sp,
-                  color = TextMuted,
+                  color = DarkCharcoalText.copy(alpha = 0.85f),
                   lineHeight = 18.sp
                 )
               }
@@ -612,7 +807,7 @@ fun HealthProfileScreen(
         }
       }
 
-      // 8. Save Button
+      // 11. Save Button
       item {
         Button(
           onClick = {
@@ -621,6 +816,10 @@ fun HealthProfileScreen(
             val parsedHeight = heightText.toFloatOrNull() ?: 172f
             val parsedCal = dailyCaloriesText.toIntOrNull() ?: 1950
             val parsedSod = maxSodiumText.toIntOrNull() ?: 1500
+            val parsedSys = systolicBpText.toIntOrNull() ?: 135
+            val parsedDia = diastolicBpText.toIntOrNull() ?: 85
+            val parsedHba1c = hba1cText.toFloatOrNull() ?: 6.8f
+            val parsedPot = potassiumText.toFloatOrNull() ?: 4.2f
 
             val updated = originalProfile.copy(
               name = name.ifBlank { "User" },
@@ -630,9 +829,14 @@ fun HealthProfileScreen(
               gender = gender,
               activityLevel = activityLevel,
               medicalConditions = selectedConditions.toList(),
+              medications = selectedMedications.toList(),
               allergies = selectedAllergies.toList(),
               dietaryPreference = dietaryPreference,
               nutritionGoal = nutritionGoal,
+              systolicBp = parsedSys,
+              diastolicBp = parsedDia,
+              hba1c = parsedHba1c,
+              serumPotassium = parsedPot,
               dailyCalorieTarget = parsedCal,
               maxSodiumMg = parsedSod,
               clinicianNotes = clinicianNotes,
@@ -642,7 +846,7 @@ fun HealthProfileScreen(
 
             viewModel.saveProfile(updated)
             scope.launch {
-              snackbarHostState.showSnackbar("Health profile saved! Safety validator re-synchronized.")
+              snackbarHostState.showSnackbar("Health profile & pharmacological safety rules updated successfully!")
             }
           },
           modifier = Modifier
