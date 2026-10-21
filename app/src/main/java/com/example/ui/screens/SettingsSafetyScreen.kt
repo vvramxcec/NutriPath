@@ -61,9 +61,13 @@ import com.example.ui.theme.WarmWhiteCard
 import com.example.ui.viewmodel.NutriPathViewModel
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.IconButton
+
 @Composable
 fun SettingsSafetyScreen(
   viewModel: NutriPathViewModel,
+  onNavigateBack: (() -> Unit)? = null,
   onLaunchOnboarding: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
@@ -123,6 +127,19 @@ fun SettingsSafetyScreen(
             modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
+            if (onNavigateBack != null) {
+              IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.size(36.dp).testTag("safety_back_btn")
+              ) {
+                Icon(
+                  imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                  contentDescription = "Back",
+                  tint = DeepTealDark
+                )
+              }
+              Spacer(modifier = Modifier.width(6.dp))
+            }
             Box(
               modifier = Modifier
                 .size(44.dp)

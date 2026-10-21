@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ElectricBolt
@@ -36,9 +35,9 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.HealthProfile
 import com.example.ui.theme.BorderSubtle
 import com.example.ui.theme.DarkCharcoalText
+import com.example.ui.theme.DeepTealContainer
 import com.example.ui.theme.DeepTealDark
 import com.example.ui.theme.DeepTealPrimary
-import com.example.ui.theme.DeepTealContainer
 import com.example.ui.theme.LimeYellowAccent
 import com.example.ui.theme.LimeYellowBackground
 import com.example.ui.theme.MacroCarbsText

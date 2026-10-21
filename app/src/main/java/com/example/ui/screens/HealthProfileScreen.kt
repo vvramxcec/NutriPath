@@ -80,10 +80,13 @@ import com.example.ui.theme.WarmWhiteCard
 import com.example.ui.viewmodel.NutriPathViewModel
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HealthProfileScreen(
   viewModel: NutriPathViewModel,
+  onNavigateBack: (() -> Unit)? = null,
   onLaunchOnboarding: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
@@ -151,6 +154,19 @@ fun HealthProfileScreen(
               verticalAlignment = Alignment.CenterVertically
             ) {
               Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onNavigateBack != null) {
+                  androidx.compose.material3.IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.size(36.dp).testTag("profile_back_btn")
+                  ) {
+                    Icon(
+                      imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                      contentDescription = "Back",
+                      tint = DeepTealDark
+                    )
+                  }
+                  Spacer(modifier = Modifier.width(6.dp))
+                }
                 Box(
                   modifier = Modifier
                     .size(46.dp)

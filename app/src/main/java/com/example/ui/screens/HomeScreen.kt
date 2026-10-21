@@ -22,9 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -67,6 +67,7 @@ import com.example.ui.viewmodel.NutriPathViewModel
 fun HomeScreen(
   viewModel: NutriPathViewModel,
   onNavigateToGenerator: (String?) -> Unit,
+  onOpenMenu: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val profile by viewModel.healthProfile.collectAsStateWithLifecycle()
@@ -153,6 +154,59 @@ fun HomeScreen(
     contentPadding = PaddingValues(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
+    // 0. Top Header Row with Logo, Title, and 3-Dot Menu Button (No separate top bar needed!)
+    item {
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Box(
+            modifier = Modifier
+              .size(36.dp)
+              .clip(CircleShape)
+              .background(DeepTealPrimary),
+            contentAlignment = Alignment.Center
+          ) {
+            Text("NP", color = LimeYellowAccent, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+          }
+          Spacer(modifier = Modifier.width(10.dp))
+          Column {
+            Text(
+              text = "NutriPath",
+              fontSize = 20.sp,
+              fontWeight = FontWeight.Bold,
+              color = DeepTealDark
+            )
+            Text(
+              text = "Clinical Nutrition & Diet",
+              fontSize = 11.sp,
+              color = TextMuted
+            )
+          }
+        }
+
+        IconButton(
+          onClick = onOpenMenu,
+          modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .background(WarmWhiteCard)
+            .border(1.dp, BorderSubtle, CircleShape)
+            .testTag("home_3_dot_menu_button")
+        ) {
+          Icon(
+            imageVector = Icons.Default.MoreVert,
+            contentDescription = "Menu & Settings",
+            tint = DeepTealDark
+          )
+        }
+      }
+    }
+
     // 1. Date Navigator Bar
     item {
       Row(
@@ -205,7 +259,7 @@ fun HomeScreen(
       }
     }
 
-    // 2. PRD 4.3 Upper Card — Daily Nutrition Summary
+    // 2. Nutrition Summary Card with Calorie & Macro Trackers
     item {
       NutritionSummaryCard(
         profile = profile,

@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Block
@@ -132,6 +133,34 @@ fun MealGeneratorScreen(
       contentPadding = PaddingValues(16.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+      // 0. Top Navigation Bar
+      item {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          IconButton(
+            onClick = onNavigateBack,
+            modifier = Modifier.size(36.dp).testTag("generator_back_btn")
+          ) {
+            Icon(
+              imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+              contentDescription = "Back",
+              tint = DeepTealDark
+            )
+          }
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(
+            text = "Meal Generator",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = DeepTealDark
+          )
+        }
+      }
+
       // 1. Time-Aware Suggestion Banner
       item {
         Card(
