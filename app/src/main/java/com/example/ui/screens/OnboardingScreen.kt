@@ -28,12 +28,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -43,11 +46,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -176,9 +183,23 @@ fun OnboardingScreen(
     if (activeConditions.any { it.contains("Cholesterol", ignoreCase = true) }) {
       restrictions.add("Low Saturated Fat (< 10g)")
     }
+    if (activeConditions.any { it.contains("Thyroid", ignoreCase = true) }) {
+      restrictions.add("Cooked Goitrogens & Iodine Balance")
+    }
+    if (activeConditions.any { it.contains("Arthritis", ignoreCase = true) }) {
+      restrictions.add("Anti-Inflammatory & Low Purine")
+    }
+
+    val googleUser = viewModel?.currentUser?.value
+    val nameFromGoogle = googleUser?.displayName?.trim()?.ifBlank { null }
+      ?: googleUser?.email?.substringBefore("@")?.replace(".", " ")?.replace("_", " ")
+        ?.split(" ")?.joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+      ?: ""
+
+    val finalName = if (initialProfile.name.isNotBlank()) initialProfile.name else nameFromGoogle
 
     return initialProfile.copy(
-      name = initialProfile.name.ifBlank { "Personalized Patient" },
+      name = finalName,
       age = age,
       gender = gender,
       weightKg = weightKg,
@@ -286,8 +307,7 @@ fun OnboardingScreen(
       if (currentStep in 1..4) {
         LifesumTopBar(
           progress = currentStep / totalProgressSteps.toFloat(),
-          onBackClick = { currentStep-- },
-          onSkipClick = onSkipToDefaults
+          onBackClick = { currentStep-- }
         )
       }
 
@@ -390,8 +410,7 @@ fun OnboardingScreen(
 @Composable
 private fun LifesumTopBar(
   progress: Float,
-  onBackClick: () -> Unit,
-  onSkipClick: () -> Unit
+  onBackClick: () -> Unit
 ) {
   Row(
     modifier = Modifier
@@ -413,31 +432,19 @@ private fun LifesumTopBar(
       )
     }
 
-    Spacer(modifier = Modifier.width(8.dp))
+    Spacer(modifier = Modifier.width(12.dp))
 
     LinearProgressIndicator(
       progress = { progress.coerceIn(0.1f, 1f) },
       modifier = Modifier
         .weight(1f)
-        .height(4.dp)
-        .clip(RoundedCornerShape(2.dp)),
-      color = LifesumStoneDark,
+        .height(6.dp)
+        .clip(RoundedCornerShape(3.dp)),
+      color = LifesumVibrantGreen,
       trackColor = LifesumStoneBorder
     )
 
-    Spacer(modifier = Modifier.width(8.dp))
-
-    TextButton(
-      onClick = onSkipClick,
-      modifier = Modifier.testTag("onboarding_skip_button")
-    ) {
-      Text(
-        text = "Skip",
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Medium,
-        color = LifesumStoneMuted
-      )
-    }
+    Spacer(modifier = Modifier.width(40.dp)) // balance the back button on left
   }
 }
 
@@ -697,18 +704,26 @@ private fun Step2Biometrics(
   onUnitToggled: (Boolean) -> Unit,
   onNext: () -> Unit
 ) {
-  val displayWeight = if (isLbsUnit) weightKg * 2.20462f else weightKg
   val unitLabel = if (isLbsUnit) "lbs" else "kg"
+
+  var ageText by remember(age) { mutableStateOf(if (age > 0) age.toString() else "") }
+  var weightText by remember(weightKg, isLbsUnit) {
+    val disp = if (isLbsUnit) weightKg * 2.20462f else weightKg
+    mutableStateOf(if (weightKg > 0) String.format(Locale.US, "%.1f", disp) else "")
+  }
+  var heightText by remember(heightCm) {
+    mutableStateOf(if (heightCm > 0) heightCm.toInt().toString() else "")
+  }
 
   Column(
     modifier = Modifier
       .fillMaxSize()
       .verticalScroll(rememberScrollState())
-      .padding(24.dp),
+      .padding(horizontal = 24.dp, vertical = 16.dp),
     verticalArrangement = Arrangement.SpaceBetween
   ) {
     Column {
-      Spacer(modifier = Modifier.height(8.dp))
+      Spacer(modifier = Modifier.height(4.dp))
       Text(
         text = "Your body metrics",
         fontSize = 26.sp,
@@ -718,103 +733,55 @@ private fun Step2Biometrics(
       )
       Spacer(modifier = Modifier.height(6.dp))
       Text(
-        text = "Used exclusively for Mifflin-St Jeor metabolic rate calculations.",
+        text = "Used exclusively for Mifflin-St Jeor metabolic calculations & safe nutrition targets.",
         fontSize = 13.sp,
         color = LifesumStoneMuted
       )
 
-      Spacer(modifier = Modifier.height(24.dp))
+      Spacer(modifier = Modifier.height(20.dp))
 
       // 1. Biological Gender
+      Text(
+        text = "Biological Sex",
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = LifesumStoneDark
+      )
+      Spacer(modifier = Modifier.height(8.dp))
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
       ) {
-        val isFemale = gender.equals("Female", ignoreCase = true)
-        val isMale = gender.equals("Male", ignoreCase = true)
-
-        Box(
-          modifier = Modifier
-            .weight(1f)
-            .height(54.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(if (isFemale) LifesumVibrantGreen else Color.White)
-            .border(1.dp, if (isFemale) LifesumVibrantGreen else LifesumStoneBorder, RoundedCornerShape(14.dp))
-            .clickable { onGenderChanged("Female") }
-            .testTag("gender_female"),
-          contentAlignment = Alignment.Center
-        ) {
-          Text(
-            text = "Female",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isFemale) Color.White else LifesumStoneDark
-          )
-        }
-
-        Box(
-          modifier = Modifier
-            .weight(1f)
-            .height(54.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(if (isMale) LifesumVibrantGreen else Color.White)
-            .border(1.dp, if (isMale) LifesumVibrantGreen else LifesumStoneBorder, RoundedCornerShape(14.dp))
-            .clickable { onGenderChanged("Male") }
-            .testTag("gender_male"),
-          contentAlignment = Alignment.Center
-        ) {
-          Text(
-            text = "Male",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isMale) Color.White else LifesumStoneDark
-          )
-        }
-      }
-
-      Spacer(modifier = Modifier.height(18.dp))
-
-      // 2. Age Stepper
-      Card(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(LifesumStoneBorder)),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-          Column {
-            Text(text = "Age", fontSize = 12.sp, color = LifesumStoneMuted)
-            Text(text = "$age years", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
-          }
-
-          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-              onClick = { if (age > 16) onAgeChanged(age - 1) },
-              shape = CircleShape,
-              modifier = Modifier.size(42.dp)
-            ) {
-              Text("−", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
-            }
-            OutlinedButton(
-              onClick = { if (age < 95) onAgeChanged(age + 1) },
-              shape = CircleShape,
-              modifier = Modifier.size(42.dp)
-            ) {
-              Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
-            }
+        listOf("Female", "Male", "Other").forEach { opt ->
+          val isSelected = gender.equals(opt, ignoreCase = true)
+          Box(
+            modifier = Modifier
+              .weight(1f)
+              .height(50.dp)
+              .clip(RoundedCornerShape(14.dp))
+              .background(if (isSelected) LifesumVibrantGreen else Color.White)
+              .border(
+                1.5.dp,
+                if (isSelected) LifesumVibrantGreen else LifesumStoneBorder,
+                RoundedCornerShape(14.dp)
+              )
+              .clickable { onGenderChanged(opt) }
+              .testTag("gender_${opt.lowercase()}"),
+            contentAlignment = Alignment.Center
+          ) {
+            Text(
+              text = opt,
+              fontSize = 15.sp,
+              fontWeight = FontWeight.Bold,
+              color = if (isSelected) Color.White else LifesumStoneDark
+            )
           }
         }
       }
 
       Spacer(modifier = Modifier.height(18.dp))
 
-      // 3. Weight Card with Unit Switch
+      // 2. Age Card (Direct Keyboard Input + Fully Visible Large Stepper Buttons)
       Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -828,13 +795,141 @@ private fun Step2Biometrics(
             verticalAlignment = Alignment.CenterVertically
           ) {
             Column {
-              Text(text = "Current Weight", fontSize = 12.sp, color = LifesumStoneMuted)
-              Text(
-                text = "${String.format(Locale.US, "%.1f", displayWeight)} $unitLabel",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold,
+              Text(text = "Age", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
+              Text(text = "Type directly or adjust with + / −", fontSize = 11.sp, color = LifesumStoneMuted)
+            }
+            Text(
+              text = if (age > 0) "$age years old" else "Enter age",
+              fontSize = 14.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = if (age > 0) LifesumGreenDarkText else LifesumStoneMuted
+            )
+          }
+
+          Spacer(modifier = Modifier.height(14.dp))
+
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            // Highly visible minus adjusting button
+            Surface(
+              onClick = {
+                val newAge = (if (age > 16) age - 1 else 16).coerceAtLeast(14)
+                onAgeChanged(newAge)
+                ageText = newAge.toString()
+              },
+              shape = CircleShape,
+              color = Color(0xFFE8F5E9),
+              border = BorderStroke(1.5.dp, LifesumVibrantGreen),
+              modifier = Modifier
+                .size(48.dp)
+                .testTag("age_decrement_btn")
+            ) {
+              Box(contentAlignment = Alignment.Center) {
+                Icon(
+                  imageVector = Icons.Default.Remove,
+                  contentDescription = "Decrease Age",
+                  tint = LifesumGreenDarkText,
+                  modifier = Modifier.size(24.dp)
+                )
+              }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Direct keyboard text input for age
+            OutlinedTextField(
+              value = ageText,
+              onValueChange = { input ->
+                val filtered = input.filter { it.isDigit() }.take(3)
+                ageText = filtered
+                filtered.toIntOrNull()?.let { parsed ->
+                  if (parsed in 1..120) {
+                    onAgeChanged(parsed)
+                  }
+                }
+              },
+              keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+              ),
+              singleLine = true,
+              textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
                 color = LifesumStoneDark
+              ),
+              placeholder = {
+                Text(
+                  text = "Age",
+                  fontSize = 16.sp,
+                  color = LifesumStoneMuted,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+              },
+              modifier = Modifier
+                .width(96.dp)
+                .testTag("age_text_input"),
+              shape = RoundedCornerShape(12.dp),
+              colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = LifesumVibrantGreen,
+                unfocusedBorderColor = LifesumStoneBorder,
+                focusedContainerColor = LifesumCreamBg,
+                unfocusedContainerColor = LifesumCreamBg
               )
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Highly visible plus adjusting button
+            Surface(
+              onClick = {
+                val newAge = (if (age > 0) age + 1 else 28).coerceAtMost(110)
+                onAgeChanged(newAge)
+                ageText = newAge.toString()
+              },
+              shape = CircleShape,
+              color = LifesumVibrantGreen,
+              border = BorderStroke(1.5.dp, LifesumVibrantGreen),
+              modifier = Modifier
+                .size(48.dp)
+                .testTag("age_increment_btn")
+            ) {
+              Box(contentAlignment = Alignment.Center) {
+                Icon(
+                  imageVector = Icons.Default.Add,
+                  contentDescription = "Increase Age",
+                  tint = Color.White,
+                  modifier = Modifier.size(26.dp)
+                )
+              }
+            }
+          }
+        }
+      }
+
+      Spacer(modifier = Modifier.height(18.dp))
+
+      // 3. Weight Card (Direct Keyboard Input + Unit Switch + Slider)
+      Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(LifesumStoneBorder)),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column {
+              Text(text = "Current Weight", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
+              Text(text = "Type directly or drag slider", fontSize = 11.sp, color = LifesumStoneMuted)
             }
 
             // kg / lbs switcher
@@ -847,29 +942,105 @@ private fun Step2Biometrics(
               Box(
                 modifier = Modifier
                   .clip(RoundedCornerShape(8.dp))
-                  .background(if (!isLbsUnit) Color.White else Color.Transparent)
+                  .background(if (!isLbsUnit) LifesumVibrantGreen else Color.Transparent)
                   .clickable { onUnitToggled(false) }
-                  .padding(horizontal = 12.dp, vertical = 4.dp)
+                  .padding(horizontal = 12.dp, vertical = 5.dp)
               ) {
-                Text(text = "kg", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (!isLbsUnit) LifesumStoneDark else LifesumStoneMuted)
+                Text(
+                  text = "kg",
+                  fontSize = 12.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = if (!isLbsUnit) Color.White else LifesumStoneMuted
+                )
               }
               Box(
                 modifier = Modifier
                   .clip(RoundedCornerShape(8.dp))
-                  .background(if (isLbsUnit) Color.White else Color.Transparent)
+                  .background(if (isLbsUnit) LifesumVibrantGreen else Color.Transparent)
                   .clickable { onUnitToggled(true) }
-                  .padding(horizontal = 12.dp, vertical = 4.dp)
+                  .padding(horizontal = 12.dp, vertical = 5.dp)
               ) {
-                Text(text = "lbs", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isLbsUnit) LifesumStoneDark else LifesumStoneMuted)
+                Text(
+                  text = "lbs",
+                  fontSize = 12.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = if (isLbsUnit) Color.White else LifesumStoneMuted
+                )
               }
             }
           }
 
-          Spacer(modifier = Modifier.height(8.dp))
+          Spacer(modifier = Modifier.height(12.dp))
+
+          // Keyboard input for weight
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            OutlinedTextField(
+              value = weightText,
+              onValueChange = { input ->
+                val filtered = input.filter { it.isDigit() || it == '.' }.take(5)
+                weightText = filtered
+                filtered.toFloatOrNull()?.let { value ->
+                  val inKg = if (isLbsUnit) value / 2.20462f else value
+                  if (inKg in 25f..350f) {
+                    onWeightChanged(inKg)
+                  }
+                }
+              },
+              keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Decimal,
+                imeAction = ImeAction.Next
+              ),
+              singleLine = true,
+              textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = LifesumStoneDark
+              ),
+              placeholder = {
+                Text(
+                  text = if (isLbsUnit) "150" else "70",
+                  fontSize = 16.sp,
+                  color = LifesumStoneMuted,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+              },
+              trailingIcon = {
+                Text(
+                  text = unitLabel,
+                  fontSize = 14.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = LifesumGreenDarkText,
+                  modifier = Modifier.padding(end = 12.dp)
+                )
+              },
+              modifier = Modifier
+                .width(160.dp)
+                .testTag("weight_text_input"),
+              shape = RoundedCornerShape(12.dp),
+              colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = LifesumVibrantGreen,
+                unfocusedBorderColor = LifesumStoneBorder,
+                focusedContainerColor = LifesumCreamBg,
+                unfocusedContainerColor = LifesumCreamBg
+              )
+            )
+          }
+
+          Spacer(modifier = Modifier.height(10.dp))
 
           Slider(
-            value = weightKg,
-            onValueChange = onWeightChanged,
+            value = weightKg.coerceIn(35f, 160f),
+            onValueChange = {
+              onWeightChanged(it)
+              val disp = if (isLbsUnit) it * 2.20462f else it
+              weightText = String.format(Locale.US, "%.1f", disp)
+            },
             valueRange = 35f..160f,
             colors = SliderDefaults.colors(
               thumbColor = LifesumVibrantGreen,
@@ -882,7 +1053,7 @@ private fun Step2Biometrics(
 
       Spacer(modifier = Modifier.height(18.dp))
 
-      // 4. Height Card
+      // 4. Height Card (Direct Keyboard Input + Slider)
       Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -890,14 +1061,92 @@ private fun Step2Biometrics(
         modifier = Modifier.fillMaxWidth()
       ) {
         Column(modifier = Modifier.padding(18.dp)) {
-          Text(text = "Height", fontSize = 12.sp, color = LifesumStoneMuted)
-          Text(text = "${heightCm.toInt()} cm", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column {
+              Text(text = "Height", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = LifesumStoneDark)
+              Text(text = "Type directly or drag slider", fontSize = 11.sp, color = LifesumStoneMuted)
+            }
+            Text(
+              text = if (heightCm > 0) "${heightCm.toInt()} cm" else "",
+              fontSize = 14.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = LifesumGreenDarkText
+            )
+          }
 
-          Spacer(modifier = Modifier.height(6.dp))
+          Spacer(modifier = Modifier.height(12.dp))
+
+          // Keyboard input for height
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            OutlinedTextField(
+              value = heightText,
+              onValueChange = { input ->
+                val filtered = input.filter { it.isDigit() }.take(3)
+                heightText = filtered
+                filtered.toFloatOrNull()?.let { value ->
+                  if (value in 80f..250f) {
+                    onHeightChanged(value)
+                  }
+                }
+              },
+              keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done
+              ),
+              singleLine = true,
+              textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = LifesumStoneDark
+              ),
+              placeholder = {
+                Text(
+                  text = "170",
+                  fontSize = 16.sp,
+                  color = LifesumStoneMuted,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth()
+                )
+              },
+              trailingIcon = {
+                Text(
+                  text = "cm",
+                  fontSize = 14.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = LifesumGreenDarkText,
+                  modifier = Modifier.padding(end = 12.dp)
+                )
+              },
+              modifier = Modifier
+                .width(160.dp)
+                .testTag("height_text_input"),
+              shape = RoundedCornerShape(12.dp),
+              colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = LifesumVibrantGreen,
+                unfocusedBorderColor = LifesumStoneBorder,
+                focusedContainerColor = LifesumCreamBg,
+                unfocusedContainerColor = LifesumCreamBg
+              )
+            )
+          }
+
+          Spacer(modifier = Modifier.height(10.dp))
 
           Slider(
-            value = heightCm,
-            onValueChange = onHeightChanged,
+            value = heightCm.coerceIn(120f, 220f),
+            onValueChange = {
+              onHeightChanged(it)
+              heightText = it.toInt().toString()
+            },
             valueRange = 120f..220f,
             colors = SliderDefaults.colors(
               thumbColor = LifesumVibrantGreen,
@@ -909,12 +1158,21 @@ private fun Step2Biometrics(
       }
     }
 
+    val isBiometricsValid = age in 14..120 && weightKg in 30f..350f && heightCm in 90f..250f && gender.isNotBlank()
+
     Button(
-      onClick = onNext,
+      onClick = {
+        if (isBiometricsValid) {
+          onNext()
+        }
+      },
+      enabled = isBiometricsValid,
       shape = RoundedCornerShape(16.dp),
       colors = ButtonDefaults.buttonColors(
         containerColor = LifesumVibrantGreen,
-        contentColor = Color.White
+        contentColor = Color.White,
+        disabledContainerColor = LifesumStoneBorder,
+        disabledContentColor = LifesumStoneMuted
       ),
       modifier = Modifier
         .fillMaxWidth()
@@ -922,7 +1180,11 @@ private fun Step2Biometrics(
         .padding(top = 24.dp)
         .testTag("biometrics_next_btn")
     ) {
-      Text("NEXT", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+      Text(
+        text = if (isBiometricsValid) "NEXT" else "PLEASE ENTER YOUR METRICS",
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Bold
+      )
     }
   }
 }
@@ -942,6 +1204,8 @@ private fun Step3ClinicalSafety(
   val clinicalConditions = listOf(
     "Diabetes Type 2",
     "Hypertension",
+    "Thyroid (Hypo/Hyperthyroid)",
+    "Arthritis (Rheumatoid/Osteo/Gout)",
     "Chronic Kidney Disease (CKD)",
     "High Cholesterol / Hyperlipidemia",
     "Celiac Disease",

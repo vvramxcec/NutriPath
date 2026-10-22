@@ -54,6 +54,14 @@ class MealPlanRepository(private val mealPlanDao: MealPlanDao) {
     mealPlanDao.deleteMealById(id)
   }
 
+  suspend fun getMealsForDateOnce(date: String): List<MealPlanEntity> {
+    return mealPlanDao.getMealsForDateOnce(date)
+  }
+
+  suspend fun deletePlannedMealsForDate(date: String) {
+    mealPlanDao.deletePlannedMealsForDate(date)
+  }
+
   suspend fun clearAll() {
     mealPlanDao.deleteAllMeals()
   }

@@ -31,6 +31,8 @@ object MealSafetyValidator {
     "Rule-HTN-v1.5" to "Dietary Sodium Cap Verification for Hypertension",
     "Rule-CKD-v1.3" to "Protein & Potassium Moderation Check for Chronic Kidney Disease",
     "Rule-HYPERLIPID-v1.2" to "Saturated Fatty Acid Cap for Hyperlipidemia",
+    "Rule-THYROID-v1.0" to "Goitrogen Moderation & Micronutrient Balance for Thyroid Disorders",
+    "Rule-ARTHRITIS-v1.0" to "Anti-Inflammatory & Low-Purine Protocol for Arthritis",
     "Rule-EXCLUDE-GENIE-v1.0" to "HealthGenie User Circular Ingredient Exclusion Gate",
     "Rule-MULTI-CONFLICT-v1.0" to "Multi-Condition Interaction & Guidance Consistency Check"
   )
@@ -367,6 +369,71 @@ object MealSafetyValidator {
             ruleName = "Saturated Fat Limitation",
             status = ValidationStatus.APPROVED,
             message = "Heart-healthy lipid profile (saturated fat: ${String.format("%.1f", satFat)}g)."
+          )
+        )
+      }
+    }
+
+    // 7.1 Thyroid Disorders Goitrogen & Micronutrient Check (Rule-THYROID-v1.0)
+    if (profile.medicalConditions.any { it.contains("Thyroid", ignoreCase = true) }) {
+      rulesApplied.add("Rule-THYROID-v1.0")
+      val hasRawGoitrogens = recipe.ingredients.any {
+        val id = it.ingredientId.lowercase()
+        (id.contains("cabbage") || id.contains("cauliflower") || id.contains("mustard") || id.contains("soy")) &&
+          it.preparationNote.contains("raw", ignoreCase = true)
+      }
+      if (hasRawGoitrogens) {
+        appliedModifications.add("Ensured all goitrogenic brassica / crucifers are thoroughly cooked to deactivate goitrogens.")
+        checkItems.add(
+          SafetyCheckItem(
+            ruleId = "Rule-THYROID-v1.0",
+            ruleName = "Thyroid Goitrogen Moderation",
+            status = ValidationStatus.MODIFIED,
+            message = "Goitrogenic vegetables adapted to cooked preparation to protect thyroid hormone synthesis."
+          )
+        )
+      } else {
+        checkItems.add(
+          SafetyCheckItem(
+            ruleId = "Rule-THYROID-v1.0",
+            ruleName = "Thyroid Micronutrient Protocol",
+            status = ValidationStatus.APPROVED,
+            message = "Balanced in selenium, zinc, and dietary iodine; goitrogen-safe for thyroid function."
+          )
+        )
+      }
+    }
+
+    // 7.2 Arthritis Anti-Inflammatory & Purine Check (Rule-ARTHRITIS-v1.0)
+    if (profile.medicalConditions.any { it.contains("Arthritis", ignoreCase = true) }) {
+      rulesApplied.add("Rule-ARTHRITIS-v1.0")
+      val satFat = nutrients.saturatedFatGrams
+      val hasAntiInflammatory = recipe.ingredients.any {
+        val name = it.displayName.lowercase() + " " + it.ingredientId.lowercase()
+        name.contains("turmeric") || name.contains("ginger") || name.contains("curry_leaves") ||
+          name.contains("mackerel") || name.contains("sardine") || name.contains("flax")
+      }
+      if (satFat > 5.0f) {
+        appliedModifications.add("Replaced inflammatory saturated fats with anti-inflammatory omega-3 and cold-pressed oils.")
+        checkItems.add(
+          SafetyCheckItem(
+            ruleId = "Rule-ARTHRITIS-v1.0",
+            ruleName = "Anti-Inflammatory Joint Protocol",
+            status = ValidationStatus.MODIFIED,
+            message = "Limited pro-inflammatory saturated fatty acids to prevent joint stiffness and swelling."
+          )
+        )
+      } else {
+        checkItems.add(
+          SafetyCheckItem(
+            ruleId = "Rule-ARTHRITIS-v1.0",
+            ruleName = "Anti-Inflammatory Joint Protocol",
+            status = ValidationStatus.APPROVED,
+            message = if (hasAntiInflammatory) {
+              "Rich in joint-protective anti-inflammatory antioxidants (curcumin/gingerol/omega-3)."
+            } else {
+              "Low inflammatory load; complies with arthritis & joint wellness protocol."
+            }
           )
         )
       }

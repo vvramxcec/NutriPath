@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -67,6 +68,7 @@ fun MealCard(
   onMarkPlanned: (Long) -> Unit,
   onEditServings: (MealPlanEntity) -> Unit,
   onDeleteMeal: (Long) -> Unit,
+  onModifyInPlanner: (() -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
   var isExpanded by remember { mutableStateOf(false) }
@@ -290,6 +292,20 @@ fun MealCard(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
+          if (onModifyInPlanner != null) {
+            IconButton(
+              onClick = onModifyInPlanner,
+              modifier = Modifier.testTag("modify_in_planner_${meal.id}")
+            ) {
+              Icon(
+                imageVector = Icons.Default.Tune,
+                contentDescription = "Modify in Planner",
+                tint = DeepTealPrimary,
+                modifier = Modifier.size(19.dp)
+              )
+            }
+          }
+
           IconButton(
             onClick = { onEditServings(meal) },
             modifier = Modifier.testTag("edit_servings_${meal.id}")

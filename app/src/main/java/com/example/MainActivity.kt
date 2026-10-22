@@ -103,9 +103,6 @@ fun NutriPathApp(viewModel: NutriPathViewModel) {
       onCompleteOnboarding = { finishedProfile ->
         viewModel.completeOnboarding(finishedProfile)
       },
-      onSkipToDefaults = {
-        viewModel.dismissOnboarding()
-      },
       modifier = Modifier
         .fillMaxSize()
         .windowInsetsPadding(WindowInsets.statusBars)
@@ -236,6 +233,9 @@ fun NutriPathApp(viewModel: NutriPathViewModel) {
                 onNavigateToGenerator = { mealType ->
                   initialGeneratorMealType = mealType
                   activeScreen = ActiveScreen.GENERATOR
+                },
+                onNavigateToPlanner = {
+                  currentTab = NutriPathTab.PLANNER
                 },
                 onOpenMenu = { activeScreen = ActiveScreen.MENU }
               )

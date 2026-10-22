@@ -107,7 +107,7 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
   private val _isGenerating = MutableStateFlow(false)
   val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
 
-  private val _isOnboardingActive = MutableStateFlow(false)
+  private val _isOnboardingActive = MutableStateFlow(true)
   val isOnboardingActive: StateFlow<Boolean> = _isOnboardingActive.asStateFlow()
 
   // Anuvaad Dataset count state
@@ -121,21 +121,21 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       FoodCompositionRepository.registerIndianEntities(indianFoods)
       _anuvaadDatasetCount.value = FoodCompositionRepository.getAllIngredients().size
 
-      val today = dateFormat.format(Date())
       val existing = database.healthProfileDao().getHealthProfileOnce()
-      if (existing == null) {
-        val initialProfile = HealthProfile(hasCompletedOnboarding = false)
+      if (existing == null || !existing.hasCompletedOnboarding) {
+        val initialProfile = existing ?: HealthProfile(hasCompletedOnboarding = false)
         healthProfileRepo.saveProfile(initialProfile)
         _isOnboardingActive.value = true
       } else {
-        _isOnboardingActive.value = !existing.hasCompletedOnboarding
+        _isOnboardingActive.value = false
       }
-      seedInitialMealsIfEmpty(today)
+      // No pre-saved meals seeded: clean state for the user
     }
   }
 
   private suspend fun seedInitialMealsIfEmpty(today: String) {
-    val existing = database.mealPlanDao().getMealsForDate(today)
+    val existing = mealPlanRepo.getMealsForDateOnce(today)
+    if (existing.isNotEmpty()) return
     val initialProfile = healthProfileRepo.getProfileOnce()
     val fullPlan = MealRecommendationEngine.generateFullDayPlan(today, initialProfile)
 
@@ -151,7 +151,7 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       fatGrams = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.fatGrams,
       fiberGrams = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.fiberGrams,
       sodiumMg = fullPlan.breakfast.recipe.calculatedNutrientsPerServing.sodiumMg,
-      status = MealPlanEntity.STATUS_CONSUMED,
+      status = MealPlanEntity.STATUS_PLANNED,
       validationStatus = fullPlan.breakfast.validationResult.overallStatus.name,
       suitabilityExplanation = fullPlan.breakfast.validationResult.suitabilityExplanation,
       ingredientsSummary = fullPlan.breakfast.recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
@@ -170,7 +170,7 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       fatGrams = fullPlan.lunch.recipe.calculatedNutrientsPerServing.fatGrams,
       fiberGrams = fullPlan.lunch.recipe.calculatedNutrientsPerServing.fiberGrams,
       sodiumMg = fullPlan.lunch.recipe.calculatedNutrientsPerServing.sodiumMg,
-      status = MealPlanEntity.STATUS_CONSUMED,
+      status = MealPlanEntity.STATUS_PLANNED,
       validationStatus = fullPlan.lunch.validationResult.overallStatus.name,
       suitabilityExplanation = fullPlan.lunch.validationResult.suitabilityExplanation,
       ingredientsSummary = fullPlan.lunch.recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
@@ -197,6 +197,50 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
     )
 
     mealPlanRepo.insertMeals(listOf(breakfast, lunch, dinner))
+  }
+
+  fun generateAndApplyFullDayPlanForSelectedDate(onComplete: () -> Unit = {}) {
+    viewModelScope.launch {
+      _isGenerating.value = true
+      val profile = healthProfile.value
+      val targetDate = _selectedDate.value
+      val plan = MealRecommendationEngine.generateFullDayPlan(targetDate, profile)
+      _fullDayPlan.value = plan
+
+      // Clear existing unconsumed planned meals for this date so they are replaced by the fresh tailored plan,
+      // while keeping any meals the user already marked as consumed intact!
+      mealPlanRepo.deletePlannedMealsForDate(targetDate)
+
+      val items = listOf(
+        plan.breakfast to "Breakfast",
+        plan.lunch to "Lunch",
+        plan.dinner to "Dinner",
+        plan.snack to "Snack"
+      ).map { (candidate, type) ->
+        val recipe = candidate.recipe
+        MealPlanEntity(
+          date = targetDate,
+          mealType = type,
+          recipeId = recipe.id,
+          recipeTitle = recipe.title,
+          servings = 1.0f,
+          caloriesKcal = recipe.calculatedNutrientsPerServing.caloriesKcal,
+          proteinGrams = recipe.calculatedNutrientsPerServing.proteinGrams,
+          carbsGrams = recipe.calculatedNutrientsPerServing.carbsGrams,
+          fatGrams = recipe.calculatedNutrientsPerServing.fatGrams,
+          fiberGrams = recipe.calculatedNutrientsPerServing.fiberGrams,
+          sodiumMg = recipe.calculatedNutrientsPerServing.sodiumMg,
+          status = MealPlanEntity.STATUS_PLANNED,
+          validationStatus = candidate.validationResult.overallStatus.name,
+          suitabilityExplanation = candidate.validationResult.suitabilityExplanation,
+          ingredientsSummary = recipe.ingredients.joinToString(", ") { "${it.displayName} (${it.quantityGrams.toInt()}g)" },
+          instructionsSummary = recipe.preparationSteps.joinToString(". ")
+        )
+      }
+      mealPlanRepo.insertMeals(items)
+      _isGenerating.value = false
+      onComplete()
+    }
   }
 
   fun changeSelectedDate(offsetDays: Int) {
@@ -384,11 +428,6 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       val finished = profile.copy(hasCompletedOnboarding = true)
       healthProfileRepo.saveProfile(finished)
       _isOnboardingActive.value = false
-      val today = dateFormat.format(Date())
-      database.mealPlanDao().deleteMealForDateAndType(today, "Breakfast")
-      database.mealPlanDao().deleteMealForDateAndType(today, "Lunch")
-      database.mealPlanDao().deleteMealForDateAndType(today, "Dinner")
-      seedInitialMealsIfEmpty(today)
       generateRecommendations()
     }
   }
@@ -398,9 +437,8 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   fun dismissOnboarding() {
-    viewModelScope.launch {
-      val current = healthProfile.value
-      healthProfileRepo.saveProfile(current.copy(hasCompletedOnboarding = true))
+    // Only dismiss if the user has genuinely completed their clinical profile details
+    if (healthProfile.value.hasCompletedOnboarding) {
       _isOnboardingActive.value = false
     }
   }
@@ -424,8 +462,21 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       _isAuthenticating.value = false
       result.fold(
         onSuccess = { user ->
-          // Sync profile to cloud on successful sign in
-          cloudSyncRepo.syncProfileToCloud(user.uid, healthProfile.value)
+          val extractedName = user.displayName?.trim()?.ifBlank { null }
+            ?: user.email?.substringBefore("@")?.replace(".", " ")?.replace("_", " ")
+              ?.split(" ")?.joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+            ?: ""
+
+          val current = healthProfile.value
+          val updated = if (extractedName.isNotBlank() && current.name.isBlank()) {
+            current.copy(name = extractedName)
+          } else if (extractedName.isNotBlank()) {
+            current.copy(name = extractedName)
+          } else {
+            current
+          }
+          healthProfileRepo.saveProfile(updated)
+          cloudSyncRepo.syncProfileToCloud(user.uid, updated)
           onSuccess()
         },
         onFailure = { error ->

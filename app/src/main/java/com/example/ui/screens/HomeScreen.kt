@@ -63,16 +63,42 @@ import com.example.ui.theme.TextMuted
 import com.example.ui.theme.WarmWhiteCard
 import com.example.ui.viewmodel.NutriPathViewModel
 
+import java.util.Locale
+
 @Composable
 fun HomeScreen(
   viewModel: NutriPathViewModel,
   onNavigateToGenerator: (String?) -> Unit,
+  onNavigateToPlanner: () -> Unit = {},
   onOpenMenu: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val profile by viewModel.healthProfile.collectAsStateWithLifecycle()
+  val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
   val meals by viewModel.currentMeals.collectAsStateWithLifecycle()
   val selectedDateDisplay by viewModel.selectedDateDisplay.collectAsStateWithLifecycle()
+  val isGenerating by viewModel.isGenerating.collectAsStateWithLifecycle()
+
+  val greetingName = remember(profile.name, currentUser) {
+    val raw = profile.name.trim().ifBlank {
+      currentUser?.displayName?.trim()?.ifBlank { null }
+        ?: currentUser?.email?.substringBefore("@")?.replace(".", " ")?.replace("_", " ")
+    } ?: ""
+    if (raw.isNotBlank()) {
+      val firstWord = raw.split(" ").firstOrNull { it.isNotBlank() } ?: raw
+      firstWord.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+    } else {
+      ""
+    }
+  }
+
+  val avatarInitials = remember(greetingName) {
+    if (greetingName.isNotBlank()) {
+      greetingName.take(2).uppercase(Locale.getDefault())
+    } else {
+      "NP"
+    }
+  }
 
   val consumedCal by viewModel.consumedCalories.collectAsStateWithLifecycle()
   val consumedPro by viewModel.consumedProtein.collectAsStateWithLifecycle()
@@ -166,23 +192,28 @@ fun HomeScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
           Box(
             modifier = Modifier
-              .size(36.dp)
+              .size(38.dp)
               .clip(CircleShape)
               .background(DeepTealPrimary),
             contentAlignment = Alignment.Center
           ) {
-            Text("NP", color = LimeYellowAccent, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(
+              text = avatarInitials,
+              color = LimeYellowAccent,
+              fontSize = 13.sp,
+              fontWeight = FontWeight.Bold
+            )
           }
           Spacer(modifier = Modifier.width(10.dp))
           Column {
             Text(
-              text = "NutriPath",
+              text = if (greetingName.isNotBlank()) "Hai, $greetingName 👋" else "NutriPath",
               fontSize = 20.sp,
               fontWeight = FontWeight.Bold,
               color = DeepTealDark
             )
             Text(
-              text = "Clinical Nutrition & Diet",
+              text = if (greetingName.isNotBlank()) "Your Personalized Nutrition" else "Clinical Nutrition & Diet",
               fontSize = 11.sp,
               color = TextMuted
             )
@@ -273,35 +304,66 @@ fun HomeScreen(
       )
     }
 
-    // 3. Prominent "Generate a Meal" Action Button
+    // 3. Prominent "Generate Full Day Plan" Action Button (Tailored to conditions, saved as PLANNED, not auto-logged)
     item {
-      Button(
-        onClick = { onNavigateToGenerator(null) },
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(54.dp)
-          .testTag("generate_meal_action_button"),
-        colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary),
-        shape = RoundedCornerShape(16.dp),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
-      ) {
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.Center
+      Column(modifier = Modifier.fillMaxWidth()) {
+        Button(
+          onClick = {
+            viewModel.generateAndApplyFullDayPlanForSelectedDate()
+          },
+          enabled = !isGenerating,
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .testTag("generate_meal_action_button"),
+          colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary),
+          shape = RoundedCornerShape(16.dp),
+          elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
         ) {
-          Icon(
-            imageVector = Icons.Default.AutoAwesome,
-            contentDescription = null,
-            tint = LimeYellowAccent,
-            modifier = Modifier.size(20.dp)
-          )
-          Spacer(modifier = Modifier.width(10.dp))
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            Icon(
+              imageVector = Icons.Default.AutoAwesome,
+              contentDescription = null,
+              tint = LimeYellowAccent,
+              modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+              text = if (isGenerating) "Generating Personalized Plan..." else "Generate Full Day Plan",
+              fontSize = 16.sp,
+              fontWeight = FontWeight.Bold,
+              color = Color.White
+            )
+          }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
           Text(
-            text = "Generate a Personalized Meal",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
+            text = "⚡ Built for your medical conditions & targets",
+            fontSize = 11.sp,
+            color = TextMuted,
+            fontWeight = FontWeight.Medium
           )
+          TextButton(
+            onClick = onNavigateToPlanner,
+            modifier = Modifier.testTag("home_modify_in_planner_link")
+          ) {
+            Text(
+              text = "Modify in Planner →",
+              fontSize = 12.sp,
+              fontWeight = FontWeight.Bold,
+              color = DeepTealPrimary
+            )
+          }
         }
       }
     }
@@ -313,18 +375,31 @@ fun HomeScreen(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Text(
-          text = "Today's Meal Schedule",
-          fontSize = 17.sp,
-          fontWeight = FontWeight.Bold,
-          color = DarkCharcoalText
-        )
-        Text(
-          text = "${meals.size} Planned / Logged",
-          fontSize = 12.sp,
-          fontWeight = FontWeight.Medium,
-          color = TextMuted
-        )
+        Column {
+          Text(
+            text = "Today's Meal Schedule",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color = DarkCharcoalText
+          )
+          Text(
+            text = "${meals.size} Planned / Logged • Only logged when confirmed",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Normal,
+            color = TextMuted
+          )
+        }
+        TextButton(
+          onClick = onNavigateToPlanner,
+          modifier = Modifier.testTag("header_planner_shortcut_btn")
+        ) {
+          Text(
+            text = "Open Planner",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = DeepTealPrimary
+          )
+        }
       }
     }
 
@@ -355,11 +430,19 @@ fun HomeScreen(
               color = DarkCharcoalText
             )
             Spacer(modifier = Modifier.height(10.dp))
-            OutlinedButton(
-              onClick = { onNavigateToGenerator(null) },
-              colors = ButtonDefaults.outlinedButtonColors(contentColor = DeepTealPrimary)
-            ) {
-              Text("Generate Meal Now")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Button(
+                onClick = { viewModel.generateAndApplyFullDayPlanForSelectedDate() },
+                colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary)
+              ) {
+                Text("Generate Full Day")
+              }
+              OutlinedButton(
+                onClick = onNavigateToPlanner,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = DeepTealPrimary)
+              ) {
+                Text("Open Planner")
+              }
             }
           }
         }
@@ -371,7 +454,8 @@ fun HomeScreen(
           onLogConsumed = { id -> viewModel.markMealConsumed(id) },
           onMarkPlanned = { id -> viewModel.markMealPlanned(id) },
           onEditServings = { meal -> mealToEditServings = meal },
-          onDeleteMeal = { id -> viewModel.deleteMeal(id) }
+          onDeleteMeal = { id -> viewModel.deleteMeal(id) },
+          onModifyInPlanner = onNavigateToPlanner
         )
       }
     }

@@ -41,6 +41,12 @@ interface MealPlanDao {
   @Query("UPDATE meal_plans SET servings = :servings, caloriesKcal = :calories, proteinGrams = :protein, carbsGrams = :carbs, fatGrams = :fat, sodiumMg = :sodium WHERE id = :id")
   suspend fun updateServingsAndNutrients(id: Long, servings: Float, calories: Float, protein: Float, carbs: Float, fat: Float, sodium: Float)
 
+  @Query("SELECT * FROM meal_plans WHERE date = :date ORDER BY id ASC")
+  suspend fun getMealsForDateOnce(date: String): List<MealPlanEntity>
+
+  @Query("DELETE FROM meal_plans WHERE date = :date AND status = 'PLANNED'")
+  suspend fun deletePlannedMealsForDate(date: String)
+
   @Query("DELETE FROM meal_plans WHERE id = :id")
   suspend fun deleteMealById(id: Long)
 

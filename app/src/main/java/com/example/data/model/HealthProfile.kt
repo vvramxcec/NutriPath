@@ -11,31 +11,31 @@ import androidx.room.PrimaryKey
 data class HealthProfile(
   @PrimaryKey
   val id: Int = 1,
-  val name: String = "Patient / User",
-  val age: Int = 42,
-  val gender: String = "Male", // "Male", "Female", "Other"
-  val weightKg: Float = 72.0f,
-  val heightCm: Float = 172.0f,
+  val name: String = "",
+  val age: Int = 0,
+  val gender: String = "", // "Male", "Female", "Other"
+  val weightKg: Float = 0f,
+  val heightCm: Float = 0f,
   val activityLevel: String = "Moderately Active", // Sedentary, Lightly Active, Moderately Active, Very Active
-  val medicalConditions: List<String> = listOf("Diabetes Type 2", "Hypertension"),
-  val medications: List<String> = listOf("Metformin"), // e.g. Warfarin, Spironolactone, Lisinopril, Atorvastatin, Metformin
-  val allergies: List<String> = listOf("Peanuts"),
-  val dietaryPreference: String = "Kerala / South Indian", // Kerala / South Indian, Indian Balanced, Vegetarian, Vegan, Eggetarian, Non-Vegetarian
-  val dietaryRestrictions: List<String> = listOf("Low Sodium (< 1500mg)", "Low Glycemic Index"),
-  val nutritionGoal: String = "Blood Sugar Stability & BP Control",
-  val clinicianNotes: String = "Avoid high GI rice varieties. Limit table salt. High fiber recommended.",
-  val dailyCalorieTarget: Int = 1950,
-  val proteinTargetG: Int = 85,
-  val carbsTargetG: Int = 220,
-  val fatTargetG: Int = 55,
-  val maxSodiumMg: Int = 1500,
-  val maxPotassiumMg: Int = 2800, // Important for CKD and K-Sparing Diuretics
-  val systolicBp: Int = 135,
-  val diastolicBp: Int = 85,
-  val hba1c: Float = 6.8f,
-  val serumPotassium: Float = 4.2f, // mEq/L normal range 3.5 - 5.0
-  val excludedIngredients: List<String> = emptyList(), // HealthGenie circular interactive excluded items
-  val preferredIngredients: List<String> = emptyList(), // HealthGenie circular preferred items
+  val medicalConditions: List<String> = emptyList(),
+  val medications: List<String> = emptyList(),
+  val allergies: List<String> = emptyList(),
+  val dietaryPreference: String = "Balanced",
+  val dietaryRestrictions: List<String> = emptyList(),
+  val nutritionGoal: String = "Eat Healthy & Maintain",
+  val clinicianNotes: String = "",
+  val dailyCalorieTarget: Int = 2000,
+  val proteinTargetG: Int = 75,
+  val carbsTargetG: Int = 250,
+  val fatTargetG: Int = 60,
+  val maxSodiumMg: Int = 2300,
+  val maxPotassiumMg: Int = 3000,
+  val systolicBp: Int = 120,
+  val diastolicBp: Int = 80,
+  val hba1c: Float = 5.5f,
+  val serumPotassium: Float = 4.0f,
+  val excludedIngredients: List<String> = emptyList(),
+  val preferredIngredients: List<String> = emptyList(),
   val consentGiven: Boolean = true,
   val hasCompletedOnboarding: Boolean = false,
   val lastUpdatedMillis: Long = System.currentTimeMillis()
@@ -45,6 +45,8 @@ object MedicalConditionCatalog {
   val AVAILABLE_CONDITIONS = listOf(
     "Diabetes Type 2",
     "Hypertension",
+    "Thyroid (Hypo/Hyperthyroid)",
+    "Arthritis (Rheumatoid/Osteo/Gout)",
     "Chronic Kidney Disease (CKD)",
     "High Cholesterol / Hyperlipidemia",
     "Celiac Disease",
@@ -54,6 +56,8 @@ object MedicalConditionCatalog {
   val CONDITION_DESCRIPTIONS = mapOf(
     "Diabetes Type 2" to "Enforces low glycemic load, restricts simple sugars (< 10g), promotes soluble fiber (Matta rice, oats).",
     "Hypertension" to "Limits daily sodium strictly to 1500mg (DASH protocol) and reduces seasoning salts.",
+    "Thyroid (Hypo/Hyperthyroid)" to "Balances iodine, selenium & zinc; moderates unheated goitrogenic crucifers and spaces meals from thyroid hormone medications.",
+    "Arthritis (Rheumatoid/Osteo/Gout)" to "Anti-inflammatory dietary protocol rich in omega-3 and antioxidants; strictly limits high-purine foods, trans-fats, and inflammatory sugars.",
     "Chronic Kidney Disease (CKD)" to "Moderates protein allowance (< 20g/meal) and monitors potassium/phosphorus loads.",
     "High Cholesterol / Hyperlipidemia" to "Restricts saturated fatty acids (< 4.5g/serving) and prioritizes monounsaturated olive fats.",
     "Celiac Disease" to "Strict 100% zero-gluten protocol; eliminates all wheat, barley, and semolina ingredients.",
