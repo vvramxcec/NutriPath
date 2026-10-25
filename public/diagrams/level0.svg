@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .entity-box { fill: #ffffff; stroke: #000000; stroke-width: 2.5; }
+      .process-circle { fill: #ffffff; stroke: #000000; stroke-width: 2.5; }
+      .store-line { stroke: #000000; stroke-width: 2.5; }
+      .main-title { font-family: 'Arial', sans-serif; font-size: 22px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .proc-num { font-family: 'Arial', sans-serif; font-size: 16px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .proc-title { font-family: 'Arial', sans-serif; font-size: 16px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .entity-title { font-family: 'Arial', sans-serif; font-size: 15px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .entity-sub { font-family: 'Arial', sans-serif; font-size: 11px; fill: #444444; text-anchor: middle; }
+      .flow-label { font-family: 'Arial', sans-serif; font-size: 11px; fill: #000000; font-weight: 600; }
+      .arrow { stroke: #000000; stroke-width: 1.8; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#000000" />
+    </marker>
+  </defs>
+
+  <rect width="100%" height="100%" class="bg" />
+
+  <!-- Main Title -->
+  <text x="600" y="45" class="main-title">DATA FLOW DIAGRAM (DFD) LEVEL 0: CONTEXT DIAGRAM</text>
+  <text x="600" y="70" font-family="Arial" font-size="12" font-style="italic" fill="#555" text-anchor="middle">(DeMarco &amp; Yourdon Notation Standard)</text>
+  <line x1="340" y1="80" x2="860" y2="80" stroke="#000000" stroke-width="1.5" />
+
+  <!-- CENTRAL PROCESS: 0.0 NutriPath System (Circle) -->
+  <circle cx="600" cy="380" r="140" class="process-circle" />
+  <line x1="465" y1="320" x2="735" y2="320" stroke="#000000" stroke-width="1.5" />
+  <text x="600" y="305" class="proc-num">0.0</text>
+  <text x="600" y="360" class="proc-title">NUTRIPATH</text>
+  <text x="600" y="385" class="proc-title">PERSONALIZED MNT</text>
+  <text x="600" y="410" class="proc-title">&amp; DIETARY ADHERENCE</text>
+  <text x="600" y="435" class="proc-title">SYSTEM</text>
+
+  <!-- ENTITY 1: Patient / User (Rectangle) -->
+  <rect x="50" y="310" width="180" height="140" class="entity-box" />
+  <text x="140" y="360" class="entity-title">PATIENT / USER</text>
+  <text x="140" y="385" class="entity-sub">(Chronic Disease Patient)</text>
+  <text x="140" y="415" class="entity-sub">[External Entity]</text>
+
+  <!-- Flows: Patient -> System -->
+  <!-- Top Flow: Input -->
+  <path d="M 230 340 L 460 340" class="arrow" />
+  <text x="245" y="330" class="flow-label">1. Biometrics, Conditions &amp; Active Meds</text>
+
+  <!-- Middle-Top Flow: Request -->
+  <path d="M 230 375 L 460 375" class="arrow" />
+  <text x="245" y="367" class="flow-label">2. Meal Request, Cravings &amp; Exclusions</text>
+
+  <!-- Middle-Bottom Flow: Consumed/Portion -->
+  <path d="M 230 410 L 460 410" class="arrow" />
+  <text x="245" y="403" class="flow-label">3. Portions &amp; Consumed Meal Logs</text>
+
+  <!-- Flows: System -> Patient -->
+  <!-- Bottom Flow: Output -->
+  <path d="M 465 440 L 230 440" class="arrow" />
+  <text x="245" y="460" class="flow-label">4. Verified Recipes &amp; Safety Audit Badges</text>
+
+  <path d="M 495 470 L 230 470" class="arrow" />
+  <text x="245" y="490" class="flow-label">5. Clinical Adherence Rationales &amp; ADIME Notes</text>
+
+  <!-- ENTITY 2: Google Gemini AI Cloud Service (Rectangle) -->
+  <rect x="970" y="310" width="180" height="140" class="entity-box" />
+  <text x="1060" y="355" class="entity-title">GOOGLE GEMINI</text>
+  <text x="1060" y="375" class="entity-title">3.5 FLASH API</text>
+  <text x="1060" y="405" class="entity-sub">(Generative AI Service)</text>
+  <text x="1060" y="425" class="entity-sub">[External Entity]</text>
+
+  <!-- Flows: System -> Gemini -->
+  <path d="M 740 345 L 970 345" class="arrow" />
+  <text x="750" y="335" class="flow-label">Clinical Context &amp; Macro Bounds</text>
+
+  <!-- Flows: Gemini -> System -->
+  <path d="M 970 415 L 740 415" class="arrow" />
+  <text x="750" y="435" class="flow-label">Generated Recipes &amp; Adherence Rationale</text>
+
+  <!-- DATA STORE: DeMarco Open-ended parallel lines -->
+  <line x1="450" y1="640" x2="750" y2="640" class="store-line" />
+  <line x1="450" y1="700" x2="750" y2="700" class="store-line" />
+  <text x="470" y="675" class="proc-num">D1</text>
+  <text x="600" y="675" class="entity-title">Local SQLite Data Store (Room)</text>
+
+  <!-- Flows: System <-> Data Store -->
+  <path d="M 570 520 L 570 640" class="arrow" />
+  <text x="440" y="580" class="flow-label" text-anchor="end">Store Profile, Meals &amp; Logs</text>
+
+  <path d="M 630 640 L 630 520" class="arrow" />
+  <text x="645" y="580" class="flow-label">Fetch Nutrients &amp; DNI Catalog</text>
+</svg>

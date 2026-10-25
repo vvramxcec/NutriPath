@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" width="1200" height="850">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .system-box { fill: #ffffff; stroke: #000000; stroke-width: 2.5; }
+      .system-title { font-family: 'Arial', sans-serif; font-size: 18px; font-weight: bold; fill: #000000; letter-spacing: 1px; }
+      .main-title { font-family: 'Arial', sans-serif; font-size: 22px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .usecase { fill: #ffffff; stroke: #000000; stroke-width: 1.8; }
+      .uc-text { font-family: 'Arial', sans-serif; font-size: 13px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .uc-sub { font-family: 'Arial', sans-serif; font-size: 10.5px; fill: #444444; text-anchor: middle; }
+      .actor-text { font-family: 'Arial', sans-serif; font-size: 14px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .line { stroke: #000000; stroke-width: 1.5; fill: none; }
+      .line-dashed { stroke: #000000; stroke-width: 1.5; stroke-dasharray: 5,4; fill: none; marker-end: url(#arrowhead); }
+      .include-label { font-family: 'Arial', sans-serif; font-size: 11px; font-style: italic; fill: #000000; text-anchor: middle; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#000000" />
+    </marker>
+  </defs>
+
+  <rect width="100%" height="100%" class="bg" />
+
+  <!-- Main Title -->
+  <text x="600" y="45" class="main-title">NUTRIPATH: USE CASE DIAGRAM</text>
+  <line x1="420" y1="55" x2="780" y2="55" stroke="#000000" stroke-width="1.5" />
+
+  <!-- System Boundary -->
+  <rect x="260" y="80" width="680" height="730" class="system-box" rx="8" />
+  <text x="600" y="110" class="system-title" text-anchor="middle">SYSTEM BOUNDARY: NUTRIPATH MOBILE PLATFORM</text>
+
+  <!-- ACTOR 1: Patient / User -->
+  <!-- Stick figure -->
+  <circle cx="120" cy="380" r="22" stroke="#000000" stroke-width="2.5" fill="#ffffff" />
+  <line x1="120" y1="402" x2="120" y2="470" stroke="#000000" stroke-width="2.5" />
+  <line x1="75" y1="425" x2="165" y2="425" stroke="#000000" stroke-width="2.5" />
+  <line x1="120" y1="470" x2="85" y2="540" stroke="#000000" stroke-width="2.5" />
+  <line x1="120" y1="470" x2="155" y2="540" stroke="#000000" stroke-width="2.5" />
+  <text x="120" y="570" class="actor-text">Patient / User</text>
+  <text x="120" y="590" class="uc-sub">(Chronic Disease Patient)</text>
+
+  <!-- ACTOR 2: Google Gemini Cloud AI -->
+  <rect x="1000" y="370" width="150" height="90" stroke="#000000" stroke-width="2" fill="#ffffff" rx="6" />
+  <text x="1075" y="405" class="actor-text">&lt;&lt;System&gt;&gt;</text>
+  <text x="1075" y="425" class="actor-text">Google Gemini</text>
+  <text x="1075" y="445" class="uc-sub">3.5 Flash REST API</text>
+
+  <!-- USE CASES (Ellipses) -->
+  <!-- UC 1 -->
+  <ellipse cx="600" cy="155" rx="200" ry="32" class="usecase" />
+  <text x="600" y="152" class="uc-text">UC1: Configure Health Profile</text>
+  <text x="600" y="168" class="uc-sub">(Biomarkers, T2D/CKD, Medications, Macros)</text>
+
+  <!-- UC 2 -->
+  <ellipse cx="600" cy="245" rx="200" ry="32" class="usecase" />
+  <text x="600" y="242" class="uc-text">UC2: Generate Personalized Meals</text>
+  <text x="600" y="258" class="uc-sub">(Gemini LLM Mode / Clinical Catalog Mode)</text>
+
+  <!-- UC 3 -->
+  <ellipse cx="600" cy="335" rx="200" ry="32" class="usecase" />
+  <text x="600" y="332" class="uc-text">UC3: Review Clinical Adherence Rationale</text>
+  <text x="600" y="348" class="uc-sub">(Metabolic Explanations &amp; Behavioral Tips)</text>
+
+  <!-- UC 4 -->
+  <ellipse cx="600" cy="425" rx="200" ry="32" class="usecase" />
+  <text x="600" y="422" class="uc-text">UC4: Interactively Exclude Ingredients</text>
+  <text x="600" y="438" class="uc-sub">(Dynamic Recipe Adaptation &amp; Substitution)</text>
+
+  <!-- UC 5 -->
+  <ellipse cx="600" cy="515" rx="200" ry="32" class="usecase" />
+  <text x="600" y="512" class="uc-text">UC5: Adjust Portion Size with Live Scaling</text>
+  <text x="600" y="528" class="uc-sub">(Preset Chips &amp; Slider: Calories, Protein, Sodium)</text>
+
+  <!-- UC 6 -->
+  <ellipse cx="600" cy="605" rx="200" ry="32" class="usecase" />
+  <text x="600" y="602" class="uc-text">UC6: Log Meal as Consumed</text>
+  <text x="600" y="618" class="uc-sub">(Updates Daily Nutritional Budget &amp; History)</text>
+
+  <!-- UC 7 -->
+  <ellipse cx="600" cy="695" rx="200" ry="32" class="usecase" />
+  <text x="600" y="692" class="uc-text">UC7: Inspect ADIME Clinical Chart Note</text>
+  <text x="600" y="708" class="uc-sub">(Assessment, Diagnosis, Intervention, Monitoring)</text>
+
+  <!-- UC 8 (Secondary Included) -->
+  <ellipse cx="600" cy="775" rx="190" ry="26" class="usecase" />
+  <text x="600" y="774" class="uc-text">UC8: Screen Drug-Nutrient Safety (DNI)</text>
+  <text x="600" y="788" class="uc-sub">(Deterministic Zero-Trust Verification)</text>
+
+  <!-- Lines from Patient to Use Cases -->
+  <line x1="160" y1="420" x2="400" y2="155" class="line" />
+  <line x1="165" y1="425" x2="400" y2="245" class="line" />
+  <line x1="170" y1="435" x2="400" y2="335" class="line" />
+  <line x1="170" y1="445" x2="400" y2="425" class="line" />
+  <line x1="165" y1="455" x2="400" y2="515" class="line" />
+  <line x1="160" y1="465" x2="400" y2="605" class="line" />
+  <line x1="150" y1="475" x2="400" y2="695" class="line" />
+
+  <!-- Include relationship UC2 -> UC8 -->
+  <line x1="600" y1="277" x2="600" y2="749" class="line-dashed" />
+  <rect x="545" y="375" width="110" height="20" fill="#ffffff" />
+  <text x="600" y="389" class="include-label">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Line from Gemini API to UC2 and UC3 -->
+  <line x1="1000" y1="400" x2="800" y2="245" class="line" />
+  <line x1="1000" y1="420" x2="800" y2="335" class="line" />
+</svg>

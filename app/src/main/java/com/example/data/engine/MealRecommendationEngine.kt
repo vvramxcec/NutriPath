@@ -23,7 +23,10 @@ object MealRecommendationEngine {
     val recipe: Recipe,
     val validationResult: ValidationResult,
     val adimeRecord: ADIMEClinicalRecord,
-    val isSuggestedForCurrentTime: Boolean = false
+    val isSuggestedForCurrentTime: Boolean = false,
+    val isAiGenerated: Boolean = false,
+    val clinicalRationale: String = "",
+    val adherenceTips: List<String> = emptyList()
   )
 
   data class FullDayMealPlan(

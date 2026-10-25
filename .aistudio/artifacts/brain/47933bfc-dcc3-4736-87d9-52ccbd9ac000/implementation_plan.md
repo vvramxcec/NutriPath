@@ -1,135 +1,173 @@
-# NutriPath: Lifesum-Style Multi-Step Onboarding Architecture
+# Personalized Gemini LLM Meal Plan Generator with Clinical Adherence Rationale
 
-Transform NutriPath's onboarding experience into a polished, consumer-grade, multi-step flow inspired by Lifesum iOS design patterns, while preserving NutriPath's clinical nutrition validation, drug-nutrient interaction gates, and Indian food dataset.
+Integrate Google Gemini 3.5 Flash to generate personalized clinical meal plans directly from the user's saved health profile (biomarkers, conditions, medications, macro targets), paired with evidence-based adherence rationales, while maintaining the existing deterministic clinical engine as an automatic zero-downtime fallback.
 
 ---
 
-## User Review & Critical Decisions
+### User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following decisions synthesize your confirmed preferences. Please review before proceeding.
-
-- **Confirmed Decision 1 (Flow Fidelity)**: Implement the **full multi-step Lifesum experience** complete with inspirational hero screens, social proof badges, goal selections, multi-select lifestyle desires, biometrics, affirmation interstitial, animated calculation progress (0% to 100%), and final plan reveal.
-- **Confirmed Decision 2 (Clinical Integration)**: Seamlessly embed **dedicated clinical steps** for chronic medical conditions (Type 2 Diabetes, Hypertension, CKD, etc.) and food allergies (Peanuts, Dairy, Gluten, etc.) directly into the flow without compromising the sleek consumer aesthetic.
-- **Confirmed Decision 3 (Visual Identity)**: Adopt the **Lifesum warm cream background (`#FDFBF7`) with vibrant emerald green buttons (`#22C55E` / `#16A34A`)**, clean stone typography, thin dark top progress bar, and modern selectable cards.
-- **Confirmed Decision 4 (Authentication & Guest Continuity)**: Maintain optional guest access on the final plan reveal screen alongside one-tap Google Sign-In and Email/Password registration.
+> **Key Decisions & Revised Strategy:**
+> - **Zero-Effort User Input**: The Gemini generator automatically reads all parameters from the user's existing saved `HealthProfile` (age, biological sex, BMI, chronic diseases, active medications, dietary restrictions, and clinically computed macro/micronutrient limits). The user does NOT need to re-enter any health details.
+> - **Deterministic Engine as Robust Fallback**: The existing on-device `MealRecommendationEngine` (implementing DASH, KDIGO, ADA, and FDA DNI rules) serves as the primary fallback. If the device is offline, the network fails, or the Gemini API key is missing, NutriPath seamlessly generates meals via the local engine without error dialogs or broken states.
+> - **Clinical Adherence Rationale**: For every meal synthesized by Gemini, the LLM provides an explicit, patient-tailored rationale explaining how the meal accommodates their specific chronic conditions and medications, fostering psychological and behavioral adherence.
+> - **Dual Generation Modes**: A prominent switch allows the patient to select either **"Gemini LLM (Personalized AI)"** or **"Clinical Deterministic (Standard)"**, with an optional prompt bar for spontaneous cravings (e.g., *"Comforting soup under 500 calories"*).
 
 ---
 
-## 1. Flow Breakdown & Screen Stages
+### 1. Overview & Core Concept
+
+- **What It Does**: Reads the patient's existing in-app health profile and calls Gemini 3.5 Flash to synthesize dynamic, diverse meals that strictly respect the patient's caloric and macronutrient boundaries. Every meal includes precise ingredients, preparation instructions, complete nutritional breakdown, and a tailored clinical rationale.
+- **Target Audience / Persona**: Chronic disease patients (Type 2 Diabetes, Hypertension, CKD stages 1–5, CVD, Gout, Hypothyroidism, Dyslipidemia) who want varied, appetizing recipes that explain why the ingredients protect their kidneys, heart, or blood glucose.
+- **Fallback Guarantee**: If offline or if the API request encounters issues, NutriPath falls back instantly to the local clinical catalog without interrupting the user's workflow.
+
+---
+
+### 2. User Experience & Visual Design
+
+#### Key User Flows
+1. **One-Tap Generation from Existing Profile**:
+   - In `MealGeneratorScreen`, the user selects their target meal type (Breakfast, Lunch, Dinner, Snack, or Full Day).
+   - The screen shows a badge: *"Using your saved profile: [Conditions] • [Medications] • [Target Calories]"*.
+   - Tap **"Generate Meal Plan"** (or optionally type a custom note/craving).
+2. **Generating State**:
+   - Displays a clean Material 3 progress card: *"Gemini AI is analyzing your clinical profile and formulating personalized meals..."*.
+3. **Displaying Generated Candidates & Adherence Rationale**:
+   - Each recipe card displays:
+     - Recipe name, prep time, calories, and color-coded macros (Protein, Carbs, Fat, Sodium, Potassium).
+     - **"AI Clinical Rationale" Card**: High-contrast, soft-teal container detailing why this meal aligns with the patient's specific health condition (e.g., *"High soluble fiber from oats slows glucose absorption for Type 2 Diabetes; low-sodium preparation preserves renal perfusion"*).
+     - **Adherence Behavioral Tips**: 2–3 actionable tips (e.g., flavor substitution ideas instead of table salt).
+4. **Interactive Actions**:
+   - **"Log as Consumed"**: Instantly records into daily tracking with live macro ring updates.
+   - **"Adjust Portion Size"**: Opens the `AdjustPortionDialog` with live macro scaling.
+   - **"Clinical ADIME Note"**: Generates a standardized clinical chart note for the meal.
+
+#### Visual Identity & Theme
+- **Color Tokens**:
+  - `DeepTealPrimary` (`#005C53`): Core clinical brand color.
+  - `LimeYellowAccent` (`#9FC131`): Highlight badge for AI-generated recommendations and sparkle indicators.
+  - `WarmWhiteCard` (`#FDFBF7`): Card backgrounds for maximum legibility.
+  - `StatusWarningAmber` (`#D97706`): Alert styling for potential safety contraindications.
+- **Accessibility & Spacing**:
+  - Touch targets minimum 48dp x 48dp.
+  - Generous 12dp–16dp card padding adhering strictly to Material 3 density standards.
+
+---
+
+### 3. Key Product Decisions & Trade-Offs
+
+- **Decision 1: Direct Profile Injection into Gemini System Prompt**
+  - *Chosen Approach*: The system prompt automatically formats the user's existing `HealthProfile` (stored in Room DB / `NutriPathViewModel`) into a structured clinical context block.
+  - *Why*: Eliminates user friction—the user sets up their profile once, and all AI features automatically align with their clinical needs.
+  - *Alternatives Considered*: Asking the user to re-select conditions before each generation was rejected as redundant and burdensome.
+
+- **Decision 2: Automated Hybrid Fallback Mechanism**
+  - *Chosen Approach*: The repository wraps the Gemini REST call in a resilient try-catch. If `GEMINI_API_KEY` is blank, network is unreachable, or a timeout occurs:
+    1. It automatically delegates to `MealRecommendationEngine.generateRecommendations(...)`.
+    2. Displays a subtle informational toast / chip: *"Showing clinical catalog recommendations (Offline Fallback)"*.
+  - *Why*: Guarantees the app never presents an empty state or error screen during demonstrations or offline use.
+
+- **Decision 3: Post-Generation Clinical Safety Screen**
+  - *Chosen Approach*: Even though Gemini is instructed with clinical constraints, the returned recipe is passed through `MealSafetyValidator` to verify that drug-nutrient interactions (e.g., Warfarin + high Vitamin K foods like kale/spinach in excess) and renal nutrient bounds are safe before saving to the meal database.
+  - *Why*: True medical safety requires zero-trust verification of generative AI outputs.
+
+---
+
+### 4. Technical Architecture & Data Strategy
+
+#### Architecture & Component Diagram
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 1: Welcome & Social Proof                                        │
-│ • Hero photography asset + "Nutrition is your superpower for change"   │
-│ • Credibility badges: "App of the Day", "Clinical Safety Engine"       │
-│ • Action: [ GET STARTED ] or [ I already have an account ]             │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    ▼
+│                        Jetpack Compose Presentation                    │
+│  ┌────────────────────────┐         ┌────────────────────────────────┐ │
+│  │   MealGeneratorScreen  │ ◄─────► │   Profile Context Summary Bar  │ │
+│  │  - Mode: AI / Standard │         │   (Pre-loaded from Room DB)    │ │
+│  │  - Candidate Cards     │         │                                │ │
+│  │  - Clinical Rationale  │         │  - Optional Craving Input      │ │
+│  └───────────┬────────────┘         └────────────────────────────────┘ │
+└──────────────┼─────────────────────────────────────────────────────────┘
+               │
+               ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 2: Weight Goal Selection                                         │
-│ • "How do you feel about your weight?"                                 │
-│ • [ I want to lose weight ]                                            │
-│ • [ Fine, but want to eat healthy ]                                    │
-│ • [ I want more muscle mass ]                                          │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 3: Lifestyle Desires (Multi-Select)                              │
-│ • "Choose what else is important to you"                               │
-│ • Selectable cards that turn vibrant green when active:                │
-│   [ More daily energy ]        [ Stabilize my mood & blood sugar ]     │
-│   [ Better fitting clothes ]   [ Create better structure ]             │
-│   [ Learn healthy recipes ]    [ Feel mentally sharp ]                 │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 4: Biological Biometrics                                         │
-│ • 4A: Gender Selection ("Female" / "Male")                             │
-│ • 4B: Date of Birth / Age selector                                     │
-│ • 4C: Weight & Height selector (kg / lbs unit switch)                  │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 5: Dedicated Clinical Safety (NutriPath Core)                    │
-│ • 5A: Medical Conditions (Type 2 Diabetes, Hypertension, CKD, etc.)    │
-│ • 5B: Food Allergies & Sensitivities (Peanuts, Dairy, Gluten, etc.)    │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 6: Affirmation Interstitial                                      │
-│ • Soft card overlay: "Great — we've got your starting point.           │
-│   Now we can make your plan smarter and more personal."                │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 7: Desired Speed of Change                                       │
-│ • "Desired speed of change?"                                           │
-│ • Slider (0.10 to 1.00 kg/week) with dynamic label:                    │
-│   "0.20 kg/week • Lasting impact" vs "0.50 kg/week • Steady momentum"  │
-│ • Action: [ BUILD MY PLAN ]                                            │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 8: Animated Calculation & Plan Synthesis                         │
-│ • Full-screen pastel background with large percentage animation:       │
-│   0% ──> 42% ──> 78% ──> 100%                                          │
-│ • Dynamic clinical status text: "Calculating metabolic rate...",       │
-│   "Applying ICMR clinical parameters...", "Finalizing your plan"       │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ Stage 9: Personalized Plan Reveal & Entry                              │
-│ • "Your personalized plan is ready"                                    │
-│ • Summary badge: Calorie target & Macro breakdown                      │
-│ • [ Continue with Google ]                                             │
-│ • [ Continue with Email ]                                              │
-│ • [ Continue as Guest ]                                                │
-└────────────────────────────────────────────────────────────────────────┘
+│                    NutriPathViewModel & Repository                     │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ fun generatePersonalizedMeal(mealType, optionalCraving)          │  │
+│  │  1. Extract active HealthProfile from StateFlow                  │  │
+│  │  2. Attempt GeminiApiService.generateContent(...)                │  │
+│  │  3. ON FAILURE -> Fallback to MealRecommendationEngine          │  │
+│  │  4. Run MealSafetyValidator on generated recipes                 │  │
+│  └───────────┬───────────────────────────────────────┬──────────────┘  │
+└──────────────┼───────────────────────────────────────┼─────────────────┘
+               │ Success                               │ Failure / Offline
+┌──────────────▼─────────────┐              ┌──────────▼──────────────┐
+│     GeminiApiService       │              │ MealRecommendationEngine│
+│  POST v1beta/models/       │              │ (Deterministic Fallback)│
+│  gemini-3.5-flash:generate │              │ - 27 Curated Recipes    │
+│  - Structured JSON Output  │              │ - Hard DNI Filter       │
+│  - Clinical Rationale      │              │ - ADIME Record Builder  │
+└──────────────┬─────────────┘              └──────────┬──────────────┘
+               │                                       │
+               └───────────────────┬───────────────────┘
+                                   │
+                                   ▼
+                      ┌────────────────────────┐
+                      │  MealSafetyValidator   │
+                      │  (Safety Verification) │
+                      └────────────┬───────────┘
+                                   │ Verified MealCandidate
+                            ┌──────▼──────┐
+                            │ Room DB     │
+                            │ MealPlanDAO │
+                            └─────────────┘
 ```
 
----
+#### Prompt Engineering & Structured Response
+The Gemini prompt will receive:
+```
+Patient Profile:
+- Age: {profile.age}, Sex: {profile.biologicalSex}, Weight: {profile.weightKg}kg, Height: {profile.heightCm}cm
+- Conditions: {profile.chronicDiseases}
+- Medications: {profile.activeMedications}
+- Daily Targets: {profile.targetCalories} kcal (Protein: {targetProtein}g, Carbs: {targetCarbs}g, Fat: {targetFat}g)
+- Dietary Restrictions: {profile.dietaryPreferences}, Allergies: {profile.allergies}
+- Meal Requested: {mealType}
+- Special Notes: {optionalCraving}
 
-## 2. Visual Styling & Color System
+Generate a personalized recipe in JSON format strictly matching this schema:
+{
+  "mealName": "...",
+  "mealType": "...",
+  "description": "...",
+  "prepTimeMinutes": 25,
+  "calories": 420.0,
+  "proteinGrams": 28.0,
+  "carbsGrams": 45.0,
+  "fatGrams": 14.0,
+  "fiberGrams": 9.0,
+  "sodiumMg": 380.0,
+  "potassiumMg": 420.0,
+  "ingredients": [{"name": "...", "amount": "...", "unit": "..."}],
+  "instructions": ["Step 1...", "Step 2..."],
+  "clinicalRationale": "Detailed clinical reasoning on how this meal assists the patient's conditions and promotes dietary adherence...",
+  "adherenceTips": ["Behavioral tip 1...", "Behavioral tip 2..."]
+}
+```
 
-- **Background Canvas**: `#FDFBF7` (Lifesum Warm Cream / Vanilla)
-- **Primary Action Buttons**: `#22C55E` (Vibrant Emerald Green) with bold white text
-- **Selected Card Surface**: `#22C55E` or `#E8F8EE` with `#16A34A` outline
-- **Unselected Card Surface**: `#FFFFFF` with subtle `#E7E5E4` border
-- **Headings & Body Text**: `#1C1917` (Deep Charcoal Stone)
-- **Secondary Subtitles**: `#78716C` (Warm Stone Muted)
-- **Top Header Bar**: Minimalist back arrow + thin segmented progress bar tracking completion percentage.
-- **Touch Target Standard**: 52dp height for all buttons and option cards.
-
----
-
-## 3. Technical Architecture & Component Structure
-
-### New / Updated Files
-1. **`app/src/main/java/com/example/ui/screens/onboarding/LifesumOnboardingScreen.kt`**:
-   - Master state machine coordinating the 9 onboarding stages.
-   - Smooth `AnimatedContent` horizontal transitions between steps.
-   - Hardware back button handling (`BackHandler`) to navigate backwards within the onboarding sequence.
-2. **`app/src/main/java/com/example/ui/screens/onboarding/components/`**:
-   - `OnboardingTopBar.kt`: Clean back arrow + animated thin progress bar.
-   - `SelectableOptionCard.kt`: Standardized card with checkmark/radio styling and smooth elevation transitions.
-   - `WheelNumberPicker.kt` or `UnitSlider.kt`: Polished numeric input for age, weight, and height.
-   - `SpeedOfChangeSlider.kt`: Smooth slider with dynamic pace descriptors ("Lasting impact", "Steady momentum", "Accelerated pace").
-   - `PlanCalculationAnimation.kt`: Coroutine-driven counter animating from 0 to 100% with staggered clinical status messages.
-3. **`app/src/main/java/com/example/ui/theme/Color.kt` & `Theme.kt`**:
-   - Add Lifesum color definitions (`LifesumCreamBackground`, `LifesumVibrantGreen`, `LifesumDarkStone`, `LifesumCardWhite`).
-4. **`app/src/main/java/com/example/MainActivity.kt`**:
-   - Wire `OnboardingScreen` to the new `LifesumOnboardingScreen`, connecting Google Sign-In, Email Sign-In, and guest completion callbacks.
-
----
-
-## 4. Verification Plan
-
-1. **Flow & Step Verification**:
-   - Test step transitions from Welcome -> Goal -> Desires -> Biometrics -> Clinical -> Affirmation -> Speed -> Animation -> Reveal.
-2. **Clinical Calculation Integrity**:
-   - Verify that Mifflin-St Jeor BMR, TDEE, daily calorie deficit/surplus (based on the chosen speed of change), and medical conditions properly update `HealthProfile`.
-3. **Authentication & Guest Mode**:
-   - Test "Continue with Google", "Continue with Email", and "Continue as Guest" from the final reveal screen.
-4. **Compilation & Unit Tests**:
-   - Run `compile_applet` and Gradle test suite (`gradle :app:testDebugUnitTest`) to ensure 100% build health.
+#### Step-by-Step Implementation Workflow
+1. **Secret & Config Setup**:
+   - Uncomment `GEMINI_API_KEY` in `.env.example`.
+   - Ensure `<uses-permission android:name="android.permission.INTERNET" />` in `AndroidManifest.xml`.
+2. **Network & Service Layer**:
+   - Implement `GeminiApiService` using existing Retrofit and Moshi dependencies.
+   - Implement `GeminiMealRepository` with structured prompt formatting, network call execution, JSON mapping, and automatic fallback to `MealRecommendationEngine`.
+3. **ViewModel Integration**:
+   - Expose `isAiGenerating`, `generationMode`, and `lastAdherenceRationale` in `NutriPathViewModel`.
+   - Implement `generatePersonalizedMeals(mealType, customNotes)` reading from `_healthProfile.value`.
+4. **UI Updates (`MealGeneratorScreen.kt`)**:
+   - Add the generation mode selector (Gemini AI vs. Deterministic Catalog).
+   - Display the active profile context summary so users see what health parameters the AI is using.
+   - Add the clinical adherence rationale card to each generated recipe.
+   - Retain full compatibility with "Log as Consumed", portion adjustments, and ADIME charting.
+5. **Compilation & Build Verification**:
+   - Run `compile_applet` to ensure clean compilation and zero regressions.

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="1200" height="820">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .box { fill: #ffffff; stroke: #000000; stroke-width: 2; }
+      .box-dashed { fill: #ffffff; stroke: #000000; stroke-width: 1.5; stroke-dasharray: 5,5; }
+      .layer-box { fill: #ffffff; stroke: #000000; stroke-width: 2.5; }
+      .title { font-family: 'Arial', sans-serif; font-size: 20px; font-weight: bold; fill: #000000; }
+      .layer-title { font-family: 'Arial', sans-serif; font-size: 15px; font-weight: bold; fill: #000000; letter-spacing: 1px; }
+      .comp-title { font-family: 'Arial', sans-serif; font-size: 14px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .comp-sub { font-family: 'Arial', sans-serif; font-size: 11px; fill: #333333; text-anchor: middle; }
+      .arrow { stroke: #000000; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-bi { stroke: #000000; stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); marker-start: url(#arrowtail); }
+      .note { font-family: 'Arial', sans-serif; font-size: 11px; font-style: italic; fill: #444444; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#000000" />
+    </marker>
+    <marker id="arrowtail" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto">
+      <polygon points="8 0, 0 3, 8 6" fill="#000000" />
+    </marker>
+  </defs>
+
+  <rect width="100%" height="100%" class="bg" />
+
+  <!-- Main Title -->
+  <text x="600" y="40" class="title" text-anchor="middle">NUTRIPATH: SYSTEM ARCHITECTURE</text>
+  <line x1="380" y1="48" x2="820" y2="48" stroke="#000000" stroke-width="1.5" />
+
+  <!-- 1. PRESENTATION LAYER -->
+  <rect x="50" y="70" width="1100" height="180" class="layer-box" rx="6" />
+  <text x="70" y="95" class="layer-title">1. PRESENTATION LAYER (ANDROID JETPACK COMPOSE UI)</text>
+
+  <!-- Presentation Components -->
+  <rect x="80" y="115" width="220" height="110" class="box" rx="4" />
+  <text x="190" y="145" class="comp-title">Onboarding &amp; Profile</text>
+  <text x="190" y="165" class="comp-sub">• Anthropometrics &amp; Sex</text>
+  <text x="190" y="180" class="comp-sub">• Chronic Conditions (T2D, CKD)</text>
+  <text x="190" y="195" class="comp-sub">• Active Medication Entry</text>
+
+  <rect x="330" y="115" width="260" height="110" class="box" rx="4" />
+  <text x="460" y="145" class="comp-title">Meal Generator &amp; Craving UI</text>
+  <text x="460" y="165" class="comp-sub">• Time-Aware Selection</text>
+  <text x="460" y="180" class="comp-sub">• Engine Switcher (AI vs Catalog)</text>
+  <text x="460" y="195" class="comp-sub">• Natural Language Craving Input</text>
+
+  <rect x="620" y="115" width="250" height="110" class="box" rx="4" />
+  <text x="745" y="145" class="comp-title">Recipe Cards &amp; Rationale</text>
+  <text x="745" y="165" class="comp-sub">• AI Clinical Adherence Rationale</text>
+  <text x="745" y="180" class="comp-sub">• Behavioral Adherence Tips</text>
+  <text x="745" y="195" class="comp-sub">• Interactive Ingredient Exclusions</text>
+
+  <rect x="900" y="115" width="220" height="110" class="box" rx="4" />
+  <text x="1010" y="145" class="comp-title">Portion &amp; Daily Tracker</text>
+  <text x="1010" y="165" class="comp-sub">• AdjustPortionDialog (Preset/Slider)</text>
+  <text x="1010" y="180" class="comp-sub">• Real-time Macro Recalculation</text>
+  <text x="1010" y="195" class="comp-sub">• Consumed Nutrient Rings</text>
+
+  <!-- Connectors: Presentation to Domain -->
+  <line x1="190" y1="225" x2="190" y2="280" class="arrow" />
+  <line x1="460" y1="225" x2="460" y2="280" class="arrow" />
+  <line x1="745" y1="225" x2="745" y2="280" class="arrow" />
+  <line x1="1010" y1="225" x2="1010" y2="280" class="arrow" />
+
+  <!-- 2. APPLICATION & DOMAIN LAYER -->
+  <rect x="50" y="280" width="1100" height="290" class="layer-box" rx="6" />
+  <text x="70" y="305" class="layer-title">2. APPLICATION &amp; DOMAIN LOGIC LAYER (MVVM ARCHITECTURE)</text>
+
+  <!-- ViewModel -->
+  <rect x="80" y="325" width="240" height="225" class="box" rx="4" />
+  <text x="200" y="355" class="comp-title">NutriPathViewModel</text>
+  <line x1="90" y1="365" x2="310" y2="365" stroke="#000000" stroke-width="1" />
+  <text x="200" y="385" class="comp-sub">• StateFlow Reactive Streams</text>
+  <text x="200" y="405" class="comp-sub">• Coroutine Dispatchers (IO/Main)</text>
+  <text x="200" y="425" class="comp-sub">• Daily Budget Accumulation</text>
+  <text x="200" y="445" class="comp-sub">• Dynamic Portion State Handler</text>
+  <text x="200" y="465" class="comp-sub">• Fallback Notice Coordinator</text>
+  <text x="200" y="485" class="comp-sub">• ADIME Note Dispatcher</text>
+
+  <!-- Gemini Repository -->
+  <rect x="350" y="325" width="240" height="225" class="box" rx="4" />
+  <text x="470" y="355" class="comp-title">GeminiMealRepository</text>
+  <line x1="360" y1="365" x2="580" y2="365" stroke="#000000" stroke-width="1" />
+  <text x="470" y="385" class="comp-sub">• Clinical Profile Prompt Synthesis</text>
+  <text x="470" y="405" class="comp-sub">• Structured JSON Parser (Moshi)</text>
+  <text x="470" y="425" class="comp-sub">• Adherence Rationale Formatter</text>
+  <text x="470" y="445" class="comp-sub">• Zero-Downtime Fallback Manager</text>
+  <text x="470" y="465" class="comp-sub">• Asynchronous REST Dispatch</text>
+
+  <!-- Safety & Clinical Validator -->
+  <rect x="620" y="325" width="240" height="225" class="box" rx="4" />
+  <text x="740" y="355" class="comp-title">MealSafetyValidator (Zero-Trust)</text>
+  <line x1="630" y1="365" x2="850" y2="365" stroke="#000000" stroke-width="1" />
+  <text x="740" y="385" class="comp-sub">• Drug-Nutrient Catalog (FDA)</text>
+  <text x="740" y="405" class="comp-sub">• Warfarin Vit-K Modulation</text>
+  <text x="740" y="425" class="comp-sub">• Statin Grapefruit Exclusion</text>
+  <text x="740" y="445" class="comp-sub">• Renal Potassium/Sodium Caps</text>
+  <text x="740" y="465" class="comp-sub">• Status: Approved / Warning / Reject</text>
+
+  <!-- Clinical Engines -->
+  <rect x="890" y="325" width="240" height="225" class="box" rx="4" />
+  <text x="1010" y="355" class="comp-title">Clinical Engines &amp; MNT</text>
+  <line x1="900" y1="365" x2="1120" y2="365" stroke="#000000" stroke-width="1" />
+  <text x="1010" y="385" class="comp-sub">• MealRecommendationEngine</text>
+  <text x="1010" y="405" class="comp-sub">• NutritionCalculator (IFCT 2017)</text>
+  <text x="1010" y="425" class="comp-sub">• ADIME Clinical Record Builder</text>
+  <text x="1010" y="445" class="comp-sub">• Deterministic Fallback Catalog</text>
+  <text x="1010" y="465" class="comp-sub">• HealthGenie Ingredient Adaptation</text>
+
+  <!-- Connectors inside Domain -->
+  <line x1="320" y1="437" x2="350" y2="437" class="arrow-bi" />
+  <line x1="590" y1="437" x2="620" y2="437" class="arrow" />
+  <line x1="860" y1="437" x2="890" y2="437" class="arrow-bi" />
+
+  <!-- Connectors: Domain to Data -->
+  <line x1="200" y1="550" x2="200" y2="600" class="arrow" />
+  <line x1="470" y1="550" x2="470" y2="600" class="arrow" />
+  <line x1="1010" y1="550" x2="1010" y2="600" class="arrow" />
+
+  <!-- 3. DATA & EXTERNAL SERVICES LAYER -->
+  <rect x="50" y="600" width="1100" height="190" class="layer-box" rx="6" />
+  <text x="70" y="625" class="layer-title">3. DATA &amp; EXTERNAL SERVICES LAYER</text>
+
+  <!-- Local Room DB -->
+  <rect x="100" y="645" width="460" height="125" class="box" rx="4" />
+  <text x="330" y="675" class="comp-title">Local Persistence (Room SQLite DB)</text>
+  <line x1="110" y1="685" x2="550" y2="685" stroke="#000000" stroke-width="1" />
+  <text x="330" y="705" class="comp-sub">• HealthProfileEntity (Biomarkers, Conditions, Active Medications)</text>
+  <text x="330" y="725" class="comp-sub">• MealPlanEntity (Daily Schedule, Consumed Tracking, Portions)</text>
+  <text x="330" y="745" class="comp-sub">• IndianFoodEntity &amp; Reference Micronutrients (IFCT &amp; Anuvaad)</text>
+
+  <!-- Gemini REST API -->
+  <rect x="640" y="645" width="460" height="125" class="box" rx="4" />
+  <text x="870" y="675" class="comp-title">Google Gemini 3.5 Flash REST API</text>
+  <line x1="650" y1="685" x2="1090" y2="685" stroke="#000000" stroke-width="1" />
+  <text x="870" y="705" class="comp-sub">• Cloud Generative AI Service (v1beta/models/gemini-3.5-flash)</text>
+  <text x="870" y="725" class="comp-sub">• Dynamic MNT Recipe Synthesis with Structured JSON Output</text>
+  <text x="870" y="745" class="comp-sub">• Patient Clinical Adherence Rationale &amp; Behavioral Guidance</text>
+</svg>

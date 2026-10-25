@@ -1,0 +1,824 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{graphicx}
+\usepackage{mathptmx}
+\usepackage{parskip}
+\usepackage{listings}
+\usepackage{titlesec}
+\setlength{\parindent}{1 cm}
+\setlength{\parskip}{6pt}
+\renewcommand{\baselinestretch}{1.5}
+\usepackage{fancyhdr}
+\usepackage{mathtools, amssymb}
+\usepackage[utf8]{inputenc}
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+\usepackage{subcaption}
+\usepackage{setspace}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{etoolbox}
+\frenchspacing
+
+% --- Float settings to avoid pages holding only a float and a few lines ---
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.9}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.8}
+\raggedbottom
+
+% --- Safe image command: shows a framed placeholder if the image file is missing ---
+% Usage: \figimg{width}{height}{path/to/image.ext}
+\newcommand{\figimg}[3]{%
+  \IfFileExists{#3}{%
+    \includegraphics[width=#1\linewidth,height=#2\textheight,keepaspectratio]{#3}%
+  }{%
+    \fbox{\parbox[c][0.2\textheight][c]{0.8\linewidth}{\centering\textit{Image placeholder:}\\ \texttt{\detokenize{#3}}}}%
+  }%
+}
+
+\let\mtcontentsname\contentsname
+\renewcommand\contentsname{\MakeUppercase\mtcontentsname}
+
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily\Large\bfseries\centering}
+  {\chaptertitlename\ \thechapter}{0pt}{\Large}
+
+\titlespacing*{\chapter}{0pt}{0pt}{6pt}
+\titlespacing*{\section}{0pt}{0pt}{6pt}
+\titlespacing*{\subsection}{0pt}{0pt}{6pt}
+\titlespacing*{\subsubsection}{0pt}{0pt}{6pt}
+
+\titleformat*{\section}{\normalfont\sffamily\Large\bfseries}
+\titleformat*{\subsection}{\normalfont\sffamily\large\bfseries}
+\titleformat*{\paragraph}{\normalfont\large\sffamily}
+\titleformat*{\subsubsection}{\normalfont\sffamily\large\itshape}
+
+% Prevent \cite from appearing in the list of figures / tables
+\makeatletter
+\let\oldcite\cite
+\pretocmd{\listoffigures}{\def\cite{\ignorespaces\@gobble}}{}{}
+\apptocmd{\listoffigures}{\let\cite\oldcite}{}{}
+\pretocmd{\listoftables}{\def\cite{\ignorespaces\@gobble}}{}{}
+\apptocmd{\listoftables}{\let\cite\oldcite}{}{}
+\makeatother
+
+\begin{document}
+
+% ======================= TITLE PAGE =======================
+\begin{minipage}{0.9\linewidth}
+    \centering
+    \vspace{2cm}
+    \Large\textbf{\uppercase{FamilyCare 360}}\\
+    \vspace{0.3cm}
+    \large\textit{A Smart Family Health Management \& Monitoring System}\\
+    \vspace{1cm}
+
+    {\uppercase{\large{{MINI PROJECT REPORT}\par}}}
+    \vspace{0.5cm}
+    \large{Submitted by}
+
+    \vspace{0.5cm}
+    {\large \textbf{SANJAY RAJ \\ CHN25MCA 2047}\par}
+    \vspace{0.5cm}
+    to
+    \vspace{0.5cm}
+
+    \textit{APJ Abdul Kalam Technological University \\ in partial fulfillment of the requirements for the award of Degree
+    in \textbf{Master of Computer Applications}}
+
+    \vspace{1cm}
+    \figimg{0.3}{0.2}{CEC.png}
+    \vspace{0.5cm}
+
+    \large {\textbf{DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING\\
+    {COLLEGE OF ENGINEERING CHENGANNUR, ALAPPUZHA}\\
+    OCTOBER 2026\\}}
+\end{minipage}
+\thispagestyle{empty}
+\clearpage
+
+% ======================= CERTIFICATE =======================
+\begin{center}
+    \vspace{1.5cm}
+    \textbf{DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING \\}
+    \textbf{COLLEGE OF ENGINEERING CHENGANNUR, ALAPPUZHA}
+\end{center}
+
+\begin{center}
+    \figimg{0.3}{0.2}{CEC.png}
+\end{center}
+\begin{center}
+    \textbf{CERTIFICATE}
+\end{center}
+\begin{spacing}{1.5}
+\textit{This is to certify that the project report titled \textbf{FAMILYCARE 360} is a bonafide record of the \textbf{MINI PROJECT} presented by \textbf{SANJAY RAJ} ( CHN25MCA 2047 ), Third Semester Master of Computer Applications  student, under our guidance and supervision. This project is submitted in partial fulfillment of the requirements for the award of the degree \textbf{Master of Computer Applications} of \textbf{APJ Abdul Kalam Technological University.}}
+\end{spacing}
+
+\begin{singlespace}
+    \vspace*{1cm}
+    \noindent
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l l}
+        \textbf{Smt. Reshma Raj K S} & \textbf{Smt. Josmi Jose} \\
+        Project Guide & Project Coordinator \\
+        Assistant Professor & Assistant Professor \\
+        Dept. of Computer Science and Engineering & Dept. of Computer Science and Engineering \\
+        \\\\
+        \\\\
+    \end{tabular*}
+\end{singlespace}
+
+\begin{center}
+    \textbf{Dr. Renu George} \\
+    Professor \\
+    Head of the Department \\
+    Dept. of Computer Science and Engineering \\
+\end{center}
+\clearpage
+
+\pagenumbering{roman}
+\newpage
+
+% ======================= DECLARATION =======================
+\begin{center}
+\Large {\bf \uppercase{Declaration}}
+\end{center}
+\vspace{1cm}
+
+\noindent I undersigned hereby declare that the project report ``\textbf{FAMILYCARE 360}'', submitted for partial fulfillment of the requirements for the award of degree of Master of Computer Application of the APJ Abdul Kalam Technological University ,Kerala is a bonafide work done by me under the supervision of \textbf{Smt. Reshma Raj K S}, Assistant Professor, Department of Computer Science and Engineering. This submission represents my ideas in my own words, and where ideas or words of others have been included, I have adequately and accurately cited and referenced the original sources. I also declare that I have adhered to the ethics of academic honesty and integrity and have not misrepresented or fabricated any data, idea, fact, or source in this submission. I understand that any violation of the above will be a cause for disciplinary action by the institute and/or the University and can also evoke penal action from the sources which have thus not been properly cited or from whom proper permission has not been obtained. This report has not been previously formed the basis for the award of any degree, diploma, or similar title of any other University.
+
+\vspace{2cm}
+
+\noindent\begin{minipage}{0.45\linewidth}
+\begin{flushleft}
+\textbf{Place:} Chengannur \\
+\textbf{Date :}
+\end{flushleft}
+\end{minipage}
+\hfill
+\begin{minipage}{0.45\linewidth}
+\begin{flushright}
+\textbf{SANJAY RAJ}\\
+\textbf{CHN25MCA 2047}\\
+\end{flushright}
+\end{minipage}
+
+\addcontentsline{toc}{chapter}{Declaration}
+\clearpage
+\newpage
+
+% ======================= ACKNOWLEDGEMENT =======================
+\begin{center}
+ \Large {\bf \uppercase{Acknowledgement}}
+\end{center}
+
+\addcontentsline{toc}{chapter}{Acknowledgement}
+\vspace{0.5cm}
+
+\noindent {This work would not have been possible without the support of many people.
+First and foremost, I give thanks to Almighty God who gave me the inner strength, resources, and ability to complete my project successfully.\\
+I would like to thank \textbf{Dr. Hari V.S}, The Principal, College of Engineering Chengannur, for providing the best facilities and atmosphere for the project completion and presentation. Special thanks to \textbf{Dr. Renu George}, HOD, Department of Computer Science and Engineering, for her exceptional support, guidance, and encouragement throughout the project. I would also like to thank my project coordinators \textbf{Smt. Josmi Jose}, Assistant Professor, Department of Computer Science and Engineering, for their extended help and support during the project. I would also like to thank \textbf{Smt. Reshma Raj K S}, Assistant Professor, Department of Computer Science and Engineering, who also took on the role of my project guide, for her extended help and support during the project.\\
+I would like to thank my dear friends and faculty for extending their cooperation and encouragement throughout the project work, without which I would never have completed the project this well. Thank you all for your love and also for being very understanding.
+ \begin{flushright}
+  \textbf{SANJAY RAJ\\CHN25MCA 2047}
+ \end{flushright}
+}
+\clearpage
+\newpage
+
+% ======================= ABSTRACT =======================
+\begin{center}
+    \Large\textbf{ABSTRACT}
+\end{center}
+\vspace{1cm}
+\textbf{``FamilyCare 360''} is a smart family health management and monitoring application designed to help families maintain the health records of all members on a single secure platform. The system allows users to store digital medical records, track health conditions and vital signs, receive medicine reminders, manage hospital appointments and upload prescriptions and medical reports. It also provides a dedicated doctor portal where healthcare professionals can monitor patient progress, review medical history, prescribe medicines,  and schedule follow-up visits. An emergency blood donor search helps find registered donors based on blood group, age, and health status. The system provides role-based access for three types of users: User, Doctor, and System Admin. A User can create and manage the family profile, add and update the details and health records of family members, and view dashboards, appointments, prescriptions, and reminders, while the System Admin manages users and system settings. The application is developed as a web-based system using HTML, CSS, and Bootstrap for the frontend, Python Django for the backend, and MySQL as the database. By bringing together families and doctors on a single platform, the application improves communication, ensures timely healthcare management, and reduces the need for maintaining paper-based medical records. Overall, FamilyCare 360 offers a simple, organized, and efficient solution for managing family healthcare digitally.
+
+\vspace{0.5cm}
+\addcontentsline{toc}{chapter}{Abstract}
+\clearpage
+\newpage
+
+\tableofcontents
+\renewcommand*\contentsname{CONTENTS}
+
+\newpage
+\renewcommand{\listfigurename}{LIST OF FIGURES}
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+\newpage
+\renewcommand{\listtablename}{LIST OF TABLES}
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+
+% ======================= CHAPTER 1 =======================
+\renewcommand{\chaptername}{CHAPTER}
+\chapter{INTRODUCTION}
+\pagenumbering{arabic}
+
+\section{Project Area}
+\par
+Health is one of the most important concerns of every family, yet the health information of family members is often scattered across paper files, mobile applications, and different hospitals. Prescriptions get misplaced, medicine timings are forgotten, appointments are missed, and during an emergency the required medical history or a matching blood donor cannot be found quickly. Managing healthcare for several family members, including children and elderly people, makes this problem even more difficult.
+
+Conventionally, hospital systems focus on individual clinical visits and records, while remote monitoring tools track the measurements of a single person rather than the whole family. Medicine reminder applications handle only adherence, and blood donor search is usually carried out through separate platforms or social media. Users therefore depend on many disconnected tools, which makes it difficult to maintain a complete and up-to-date picture of the family's health.
+
+``\textbf{FamilyCare 360}'' is proposed as a smart family health management and monitoring system. It brings digital health records, vital sign monitoring, appointments, medicine reminders, prescriptions, doctor consultation, and emergency blood donor search together in one web-based platform with role-based access for the User, the Doctor, and the System Admin. Users can store medical records, prescriptions, and reports for every family member, doctors can review patient history and prescribe medicines and diet plans, and the System Admin can manage users and system settings.
+
+Developed using Python Django and MySQL with an HTML, CSS, and Bootstrap frontend, FamilyCare 360 combines web application development, relational database management, and authentication in a practical healthcare system. Health information is stored securely in the database so that records are organized, accessible, and not lost, and the responsive interface allows the application to be used on desktop, tablet, and mobile devices.
+
+\section{Objectives}
+\begin{enumerate}
+\item \textbf{To develop a centralized platform for family health records:}
+The system aims to provide a single web application where all the medical records, prescriptions, and reports of every family member are stored securely and can be accessed whenever required.
+
+\item \textbf{To record and monitor vital signs:}
+The system allows users to record vital signs such as blood pressure, blood sugar, heart rate, temperature, weight, and oxygen level so that health conditions can be tracked over time.
+
+\item \textbf{To manage appointments and reminders:}
+The system allows users to manage doctor appointments and provides medicine and appointment reminders so that treatment is followed on time.
+
+\item \textbf{To enable doctor consultation and prescription:}
+The system provides a doctor portal where doctors can view patient records, add consultation notes, prescribe medicines, recommend personalized diet plans, and schedule follow-up visits.
+
+\item \textbf{To provide an emergency blood donor search:}
+The system allows registered donors to be searched based on blood group, age, and health status so that donors can be found quickly in an emergency.
+
+\item \textbf{To implement role-based access control:}
+The system provides separate access and functionalities for the System Admin, Doctor, and User so that every role can access only the information relevant to it.
+
+\item \textbf{To provide secure and persistent data storage:}
+The system stores healthcare information securely in a MySQL database with authentication so that records are protected and not lost.
+\end{enumerate}
+
+% ======================= CHAPTER 2 =======================
+\chapter{LITERATURE REVIEW}
+
+\section{Does Remote Patient Monitoring Reduce Acute Care Use? A Systematic Review}
+
+\hspace{1cm}This paper presents a systematic review of 91 studies published between 2015 and 2020, collected from PubMed, Embase, and CINAHL, to examine whether remote patient monitoring reduces the use of acute care. The review reports that remote patient monitoring reduced hospital admissions, the length of hospital stays, and emergency visits. This paper is relevant to FamilyCare 360 because it supports the idea that regular monitoring of vital signs outside the hospital can improve healthcare outcomes, which is consistent with the vital monitoring module of the proposed system. However, the included studies were heterogeneous, the evidence for some diseases was limited, and the monitoring was focused on individual patients rather than families. \cite{three}
+
+\section{Do Mobile Device Apps Designed to Support Medication Adherence Demonstrate Efficacy?}
+
+\hspace{1cm}This paper presents a systematic review and meta-analysis of randomised controlled trials on mobile applications that support medication adherence. The meta-analysis included 9 trials with 1,159 participants and found that the applications improved medication adherence, with an odds ratio of about 2.12. This paper is relevant to FamilyCare 360 because it shows that digital medicine reminders can help patients follow their treatment, which supports the medicine reminder module of the proposed system. However, the studies had small samples, short follow-up periods of at most 16 weeks, and relied on self-reported adherence. \cite{two}
+
+\section{Remote Patient Monitoring: A Systematic Review}
+
+\hspace{1cm}This paper presents a systematic review of remote patient monitoring in which 272 of 947 articles retrieved from PubMed (2000--2018) were included. According to the review, about 76.8\% of the studies reported positive results from remote monitoring. This paper is relevant to FamilyCare 360 because it demonstrates the benefits of digital monitoring of patients and supports the need for a platform that tracks health data continuously. However, remote monitoring had not yet been adequately evaluated for postoperative and surgical care, and the systems reviewed monitor an individual patient and do not combine family records, doctor care, and donor search. \cite{one}
+
+% ======================= CHAPTER 3 =======================
+\chapter{PROBLEM DEFINITION AND MOTIVATIONS}
+
+\section{Existing System}
+
+Family health information is usually maintained using paper files, photographs of prescriptions, notes, or memory, while appointments and medicine timings are tracked using separate applications or not tracked at all. Hospital systems focus on individual clinical visits and records, and remote monitoring tools track the measurements of one person rather than the whole family. Emergency blood donor search is carried out separately from health management systems, often through personal contacts or social media. As a result, family health data is scattered across paper files, applications, and hospitals, and it is difficult to obtain a complete view when it is needed. FamilyCare 360 addresses these limitations by providing a single role-based web platform for family records, doctor care, reminders, and donor search.
+
+\section{Limitations}
+\begin{itemize}
+\item \textbf{Fragmented Healthcare Records:} Medical records, prescriptions, and reports are scattered across paper files, applications, and hospitals.
+
+\item \textbf{Paper-Based Records Are Easily Lost:} Physical prescriptions and reports can be misplaced, damaged, or forgotten when needed.
+
+\item \textbf{No Family-Level View:} Existing monitoring tools track one person's measurements rather than all members of a family.
+
+\item \textbf{Missed Medicines and Appointments:} Without reminders, medicines and follow-up visits are easily forgotten.
+
+\item \textbf{Weak Doctor--Patient Communication:} Doctors do not have an easy way to review the history and progress of a patient before consultation.
+
+\item \textbf{Emergency Delays:} Finding a suitable blood donor in an emergency takes time because donor search is separate from health management systems.
+
+\item \textbf{No Role-Based Access:} Many tools do not separate the access of users, doctors, and administrators, which affects the privacy of health data.
+
+\item \textbf{Limited Monitoring of Health Trends:} Vital signs are rarely recorded regularly, so changes in health conditions are noticed late.
+\end{itemize}
+
+\section{Problem Statement}
+\par To solve the problem of managing family health records, medicines, appointments, and doctor communication through a single digital platform, and to reduce fragmented healthcare records and emergency delays.
+
+\section{Proposed System}
+\par FamilyCare 360 is a smart family health management and monitoring system developed as a web application. It provides a centralized platform where a User can create a family profile, add family members, record vital signs, store medical reports and prescriptions, manage doctor appointments, and receive medicine and appointment reminders. Doctors can review patient records, add consultation notes, prescribe medicines, recommend personalized diet plans, and schedule follow-up visits, and an emergency blood donor search helps find registered donors. Access is controlled through three roles: User, Doctor, and System Admin. The application is built using Python Django for the backend, MySQL for the database, and HTML, CSS, and Bootstrap for the responsive user interface.
+
+The key features of the proposed system include:
+\begin{enumerate}
+\item \textbf{User Registration and Login:} Allows users, doctors, and administrators to securely sign in and access features according to their role.
+
+\item \textbf{Family Management:} Allows the User to add, edit, delete, and manage family members and their health information.
+
+\item \textbf{Health Records and Vital Signs:} Stores medical history, health conditions, and vital signs such as blood pressure, blood sugar, heart rate, temperature, weight, and oxygen level.
+
+\item \textbf{Appointment Management:} Allows booking and management of doctor appointments with notifications.
+
+\item \textbf{Medicine Reminders:} Reminds users about medicine timings and upcoming appointments.
+
+\item \textbf{Doctor Portal:} Allows doctors to view patient records, add consultation notes, prescribe medicines, and recommend personalized diet plans.
+
+\item \textbf{Medical Report Upload:} Allows users to upload prescriptions and medical reports for each family member.
+
+\item \textbf{Emergency Blood Donor Search:} Allows registered donors to be searched based on blood group, age, and health status.
+
+\item \textbf{Admin Management:} Allows the System Admin to manage users and system settings.
+
+\item \textbf{Secure Storage:} Stores healthcare information securely in a MySQL database.
+\end{enumerate}
+
+% ======================= CHAPTER 4 =======================
+\chapter{REQUIREMENT ANALYSIS}
+
+\section{Hardware Requirements}
+\begin{itemize}
+    \item \textbf{Client Device:} A smartphone, tablet, or computer capable of running a modern web browser
+    \item \textbf{Processor:} Any modern processor capable of running a web browser
+    \item \textbf{Memory (RAM):} 2 GB or higher
+    \item \textbf{Storage:} Sufficient storage for the browser and application use
+    \item \textbf{Network:} Active internet connection
+    \item \textbf{Server:} A system capable of hosting the Django application and the MySQL database
+\end{itemize}
+
+\section{Software Requirements}
+\begin{itemize}
+
+\item \textbf{Operating System:} Windows 10/11 or Linux
+
+\item \textbf{Frontend:}
+\begin{itemize}
+    \item \textbf{HTML, CSS, Bootstrap:} Used to build the responsive user interface for health records, vital monitoring, appointments, reminders, and blood donor search.
+\end{itemize}
+
+\item \textbf{Backend:}
+\begin{itemize}
+    \item \textbf{Python Django:} Used to manage authentication, role-based access, health records, appointments, and notifications.
+\end{itemize}
+
+\item \textbf{Database:}
+\begin{itemize}
+    \item \textbf{MySQL:} A relational database used to store users, family details, health records, vital signs, appointments, prescriptions, and other healthcare information.
+\end{itemize}
+
+\item \textbf{Development Tools:}
+\begin{itemize}
+    \item \textbf{Visual Studio Code:} For coding and development
+    \item \textbf{Web Browser:} For running and testing the application
+\end{itemize}
+
+\end{itemize}
+
+\section{System Features}
+\begin{enumerate}
+
+\item \textbf{User Registration and Login:}
+Allows users, doctors, and the System Admin to register and log in securely, with access based on their role.
+
+\item \textbf{Family Management:}
+Allows the User to add, edit, delete, and manage family members and family health information.
+
+\item \textbf{Health Records and Vital Signs:}
+Allows storage of medical history and health conditions and recording of blood pressure, blood sugar, heart rate, temperature, weight, and oxygen level.
+
+\item \textbf{Appointment Management:}
+Allows users to book and manage doctor appointments and receive appointment notifications.
+
+\item \textbf{Medicine Reminders:}
+Reminds users about the timing of medicines for each family member.
+
+\item \textbf{Doctor Consultation and Prescription:}
+Allows doctors to view patient records, add consultation notes, prescribe medicines, recommend personalized diet plans, and schedule follow-up visits.
+
+\item \textbf{Medical Report Upload:}
+Allows users to upload prescriptions and medical reports.
+
+\item \textbf{Emergency Blood Donor Search:}
+Allows registered users to be searched as potential donors based on blood group, age, and health status.
+
+\item \textbf{Admin Management:}
+Allows the System Admin to manage users and system settings.
+
+\item \textbf{Dashboard:}
+Displays appointments, prescriptions, reminders, and health summaries to the user.
+
+\item \textbf{Logout:} Allows users to securely sign out of their accounts.
+
+\item \textbf{Responsive Interface:} Provides a clean interface that works on desktop, tablet, and mobile devices.
+
+\end{enumerate}
+
+\section{Non-Functional Requirements}
+
+\subsection{Performance Requirements}
+\begin{enumerate}
+\item \textbf{Efficient Response:} The system should respond efficiently to user requests.
+\item \textbf{Fast Data Retrieval:} Health records, appointments, and reminders should load quickly from the database.
+\item \textbf{Timely Reminders:} Medicine and appointment notifications should be generated at the correct time.
+\item \textbf{Smooth Interaction:} Navigation between dashboard, records, appointments, and reports should be smooth.
+\end{enumerate}
+
+\subsection{Quality Requirements}
+\begin{enumerate}
+\item \textbf{Security:}
+User health information should be protected through authentication and role-based access control.
+
+\item \textbf{Scalability:}
+The system should support an increasing number of users, families, and health records.
+
+\item \textbf{Usability:}
+The system should provide a simple and user-friendly interface.
+
+\item \textbf{Reliability:}
+Health records and other important information should be stored safely.
+
+\item \textbf{Responsiveness:}
+The web interface should work properly on desktop, tablet, and mobile devices.
+
+\item \textbf{Maintainability:}
+The modular design should allow individual components to be maintained and updated when required.
+
+\item \textbf{Data Integrity:}
+The system should maintain accurate and consistent data in the database.
+
+\item \textbf{Privacy:}
+Donor and patient information should be accessible only to authorized roles.
+\end{enumerate}
+
+% ======================= CHAPTER 5 =======================
+\chapter{DESIGN AND IMPLEMENTATION}
+
+The proposed system is a web application named FamilyCare 360, designed to help families manage their health records and communicate with doctors. The system provides a single platform where users can store records, monitor vital signs, manage appointments and reminders, search for blood donors, and consult doctors. The application follows a client--server architecture in which the browser acts as the client and a Django server with a MySQL database acts as the backend.
+
+\section{Overall Design}
+FamilyCare 360 is a web application designed to combine family health record management with doctor care and emergency support. It uses HTML, CSS, and Bootstrap for the user interface, Python Django for application logic, and MySQL for data storage. Three roles access the system: User, Doctor, and System Admin. Overall, the system aims to provide a simple, secure, and centralized platform that supports continuous monitoring of family health.
+
+\section{System Design}
+The system is structured into three main layers: the presentation layer, the application layer, and the data layer.
+
+The presentation layer is developed using HTML, CSS, and Bootstrap and provides interfaces for health records, vital monitoring, appointments, reminders, and blood donor search. The application layer is developed using Python Django and manages authentication, role-based access, health records, appointments, and notifications. The data layer uses MySQL to securely store users, family details, health records, vital signs, appointments, prescriptions, and other healthcare information.
+
+When a user interacts with the system, the request is sent to the Django server, validated for authentication and role, processed, and the result is returned to the user interface. This layered design ensures organized processing, maintainability, and efficient data management.
+
+\subsection{Client-Side Design}
+The client side represents the user interface of FamilyCare 360. It is developed using HTML, CSS, and Bootstrap to provide a clean, responsive, and user-friendly experience.
+
+The client side includes pages such as login, registration, user dashboard, family members, health records and vitals, appointments, reminders, reports, blood donor search, doctor dashboard, prescriptions, and admin management. Bootstrap components are used to make the interface responsive on desktop, tablet, and mobile devices, and forms with validation guide users while entering details.
+
+\subsection{Server-Side Design}
+The server side is developed using Python Django. It is responsible for authentication, role-based access control, handling of health records and appointments, generating reminders and notifications, and communicating with the MySQL database.
+
+Django models represent users, family members, health records, vital signs, appointments, prescriptions, reports, and donors. Views check the role of the logged-in user before returning data, so that a User can access only their own family's information, a Doctor can access the records of their patients, and the System Admin can manage the system.
+
+\section{System Architecture}
+The FamilyCare 360 system follows a three-tier architecture consisting of the Frontend, the Backend, and the Database.
+
+Three user roles access the system: User, Doctor, and System Admin. The frontend provides interfaces for health records, vital monitoring, appointments, reminders, and blood donor search. The backend, built using Python Django, manages authentication, role-based access, health records, appointments, and notifications. The MySQL database securely stores users, family details, health records, vital signs, appointments, prescriptions, and other healthcare information.
+
+\begin{figure}[H]
+    \centering
+    \figimg{1.0}{0.55}{systemarchitecture.jpg}
+    \caption{System Architecture}
+    \label{fig:architecture}
+\end{figure}
+
+\section{Use Case Diagram}
+\par
+The Use Case Diagram represents the interaction between the actors and the FamilyCare 360 application. It identifies the main users of the system and the activities that each of them can perform. In this system, there are three actors:
+
+\begin{enumerate}
+    \item \textbf{User:} The User can log in and log out, create the family profile, add and update family members, record vital signs, upload medical reports and prescriptions, book appointments, receive reminders, and search for blood donors.
+    \item \textbf{Doctor:} The Doctor can log in, view patient records and history, add consultation notes, prescribe medicines, recommend diet plans, and schedule follow-up visits.
+    \item \textbf{System Admin:} The System Admin can log in, manage users and doctors, and manage system settings.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \figimg{1.0}{0.55}{usecasediagram.jpg}
+    \caption{Use Case Diagram for FamilyCare 360}
+    \label{fig:usecase}
+\end{figure}
+
+\section{Data Flow Diagrams (DFD)}
+
+\par
+The Data Flow Diagram (DFD) illustrates how data flows within the FamilyCare 360 system between the external entities, the application processes, and the database. The User, Doctor, and System Admin provide requests to the system and receive records, prescriptions, reminders, and reports in return. The system writes and reads information from the MySQL database, which holds user details, family records, vital signs, appointments, prescriptions, and reports.
+
+The Level 0 DFD represents the whole system as a single process, the FamilyCare 360 System, interacting with the three external entities and the database. The Level 1 DFD divides this process into sub-processes such as Authentication, Family and Health Record Management, Appointment and Reminder Management, Prescription Management, and Blood Donor Search, and shows how data moves between these processes and the database.
+
+\vspace{0.3cm}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.9}{0.5}{level0.jpg}
+    \caption{DFD Level 0}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.9}{0.7}{level1.jpg}
+    \caption{DFD Level 1}
+\end{figure}
+
+\section{Module Description}
+
+\noindent \textbf{FamilyCare 360} is designed as a web application that operates through six modules which work together to provide a complete family healthcare management platform.
+
+\begin{enumerate}
+    \item \textbf{User and Authentication Module:} Manages user login, authentication, and role-based access for the System Admin, Doctor, and User.
+
+    \item \textbf{Family Management Module:} Allows the User to add, edit, delete, and manage family members and family health information.
+
+    \item \textbf{Health Records and Vital Signs Module:} Stores medical history, health conditions, blood pressure, blood sugar, heart rate, temperature, weight, and oxygen level.
+
+    \item \textbf{Appointment and Reminder Module:} Manages doctor appointments, medicine reminders, and appointment notifications.
+
+    \item \textbf{Doctor and Prescription Module:} Allows doctors to view patient records, add consultation notes, prescribe medicines, and recommend personalized diet plans.
+
+    \item \textbf{Medical Reports and Blood Donor Module:} Supports uploading of medical reports and allows registered users to be searched as potential blood donors based on blood group, age, and health status.
+\end{enumerate}
+
+% ======================= CHAPTER 6 =======================
+\chapter{REPORT OF PROJECT IMPLEMENTATION}
+
+\section{Implementation Plan}
+
+\subsection{Setup and Environment Preparation}
+\begin{itemize}
+    \item Set up the development environment using Python, Django, and Visual Studio Code.
+    \item Install the required Python packages, including Django and the MySQL connector, using pip.
+    \item Create the MySQL database and configure it in the Django project settings.
+    \item Plan the database schema for users, family members, health records, vital signs, appointments, prescriptions, reports, and donors.
+    \item Plan the UI design for login, dashboards, records, appointments, and donor search pages.
+\end{itemize}
+
+\subsection{Backend Implementation}
+\begin{itemize}
+    \item Develop the backend using Python Django to handle authentication, data processing, and notifications.
+    \item Implement login, registration, logout, and role-based access control for the System Admin, Doctor, and User.
+    \item Implement family member management with add, edit, and delete operations.
+    \item Implement health record and vital sign storage in MySQL.
+    \item Implement appointment booking and management.
+    \item Implement medicine and appointment reminders and notifications.
+    \item Implement prescription, consultation note, and diet plan features for doctors.
+    \item Implement medical report upload.
+    \item Implement the emergency blood donor search based on blood group, age, and health status.
+\end{itemize}
+
+\subsection{Frontend Implementation}
+\begin{itemize}
+    \item Develop the user interface using HTML, CSS, and Bootstrap.
+    \item Design pages for login, registration, dashboards, family members, health records, appointments, reminders, reports, prescriptions, and donor search.
+    \item Create forms with validation for entering account details and health information.
+    \item Design the interface to be responsive and suitable for desktop, tablet, and mobile devices.
+\end{itemize}
+
+\subsection{Security and Data Handling}
+\begin{itemize}
+    \item Use Django authentication to manage user login states.
+    \item Enforce role-based access control so that each role can access only its permitted pages and data.
+    \item Validate login credentials before granting access to protected pages.
+    \item Validate form inputs before saving data to the database.
+    \item Store healthcare information securely in the MySQL database.
+    \item Ensure that protected operations are accessible only to authenticated users.
+\end{itemize}
+
+\section{Testing and Various Types of Testing Used}
+
+Testing verifies that the software functions correctly according to its requirements, helping identify errors and ensure reliable interaction between the interface, the Django backend, and the MySQL database. In FamilyCare 360, testing covers authentication, role-based access, family management, health records, appointments, reminders, prescriptions, report upload, donor search, and input validation.
+
+\subsection{Unit Testing}
+
+Unit testing checks individual functionalities independently to verify that each performs its intended task.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|p{3.2cm}|p{4.4cm}|p{4.4cm}|c|}
+\hline
+\textbf{Sl No} & \textbf{Procedures} & \textbf{Expected Result} & \textbf{Actual Result} & \textbf{Pass/Fail} \\
+\hline \hline
+1 & User Registration & A new user account is created with valid details. & Account created successfully & Pass \\
+\hline
+2 & User Login & A registered user logs in using valid credentials. & Same as expected & Pass \\
+\hline
+3 & Invalid Login & Incorrect credentials are rejected with an error message. & Error message displayed & Pass \\
+\hline
+4 & Add Family Member & A family member is added with valid details. & Family member added and listed & Pass \\
+\hline
+5 & Record Vital Signs & Vital signs are saved for the selected family member. & Vital signs saved successfully & Pass \\
+\hline
+6 & Book Appointment & An appointment is created and a notification is generated. & Appointment created and notification generated & Pass \\
+\hline
+7 & Add Prescription & A doctor can prescribe medicines for a patient. & Prescription saved for the patient & Pass \\
+\hline
+8 & Blood Donor Search & Donors matching the blood group, age, and health status are listed. & Matching donors listed & Pass \\
+\hline
+\end{tabular}
+\caption{Unit Test Cases and Results}
+\end{table}
+
+\subsection{Integration Testing}
+
+Integration testing verifies that different components of FamilyCare 360 work together correctly, including the interface, the Django backend, and the MySQL database.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|p{3.2cm}|p{4.4cm}|p{4.4cm}|c|}
+\hline
+\textbf{Sl No} & \textbf{Procedures} & \textbf{Expected Result} & \textbf{Actual Result} & \textbf{Pass/Fail} \\
+\hline \hline
+1 & Registration and Database Integration & Valid user details are stored in the database. & User details stored in the database & Pass \\
+\hline
+2 & Login and Role Integration & The user is redirected to the dashboard of the correct role. & User redirected to the correct dashboard & Pass \\
+\hline
+3 & Health Record Integration & Records and vital signs are saved and retrieved correctly. & Records saved and retrieved correctly & Pass \\
+\hline
+4 & Appointment Integration & Appointments are visible to both the user and the doctor. & Appointment visible to user and doctor & Pass \\
+\hline
+5 & Reminder Integration & Reminders are generated for stored medicines and appointments. & Reminders generated as expected & Pass \\
+\hline
+6 & Report Upload Integration & Uploaded reports are stored and displayed for the correct member. & Report stored and displayed correctly & Pass \\
+\hline
+\end{tabular}
+\caption{Integration Test Cases and Results}
+\end{table}
+
+\subsection{System Testing}
+
+System testing evaluates the complete FamilyCare 360 application to verify that its major features operate together as expected.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|p{3.2cm}|p{4.4cm}|p{4.4cm}|c|}
+\hline
+\textbf{Sl No} & \textbf{Procedures} & \textbf{Expected Result} & \textbf{Actual Result} & \textbf{Pass/Fail} \\
+\hline \hline
+1 & Overall System Testing & The major features of the application operate correctly. & Features work as expected & Pass \\
+\hline
+2 & Authentication Testing & Valid credentials are accepted and invalid credentials are rejected. & Same as expected & Pass \\
+\hline
+3 & Role-Based Access Testing & Users cannot access pages that belong to other roles. & Access to other roles' pages denied & Pass \\
+\hline
+4 & Family and Records Testing & Members and health records can be added, viewed, updated, and removed. & Records managed correctly & Pass \\
+\hline
+5 & Doctor Portal Testing & Doctors can view patient history and add prescriptions and diet plans. & Doctor portal works as expected & Pass \\
+\hline
+6 & Input Validation Testing & Invalid or incomplete input is rejected appropriately. & Invalid input rejected & Pass \\
+\hline
+7 & Responsiveness Testing & The interface displays correctly on desktop, tablet, and mobile. & Interface displays correctly on all screens & Pass \\
+\hline
+\end{tabular}
+\caption{System Test Cases and Results}
+\end{table}
+
+% ======================= CHAPTER 7 =======================
+\chapter{RESULTS AND DISCUSSION}
+
+\section{Advantages}
+\begin{itemize}
+\item \textbf{Centralized Health Records:}
+All medical records, prescriptions, and reports of the family are stored in one secure place.
+
+\item \textbf{Family-Level Monitoring:}
+Vital signs and health conditions of every family member can be tracked on a single platform.
+
+\item \textbf{Timely Reminders:}
+Medicine and appointment reminders help users follow treatment and avoid missed visits.
+
+\item \textbf{Doctor Collaboration:}
+Doctors can review patient history, prescribe medicines, and recommend personalized diet plans.
+
+\item \textbf{Emergency Support:}
+The blood donor search helps find suitable donors quickly in an emergency.
+
+\item \textbf{Role-Based Access:}
+Separate access for the System Admin, Doctor, and User protects the privacy of health data.
+
+\item \textbf{Reduced Paper Records:}
+Digital storage reduces the need to maintain paper-based medical records.
+
+\item \textbf{Responsive Interface:}
+The web interface works on desktop, tablet, and mobile devices.
+\end{itemize}
+
+\section{Limitations}
+\begin{itemize}
+\item \textbf{Internet Dependency:}
+An active internet connection is required to access the web application.
+
+\item \textbf{Manual Data Entry:}
+Vital signs and records must be entered manually, and incorrect entries may affect monitoring.
+
+\item \textbf{No Direct Device Integration:}
+The system does not yet collect readings automatically from wearable or medical devices.
+
+\item \textbf{Basic Notification Mechanism:}
+Reminders and alerts are limited to the application and do not use advanced notification services such as SMS or push notifications.
+
+\item \textbf{Donor Availability:}
+Blood donor search depends on donors who have registered in the system.
+
+\item \textbf{Limited Evaluation:}
+The application has not yet been evaluated with a large and diverse group of users.
+\end{itemize}
+
+\newpage
+\section{Screenshots}
+\vspace{0.1cm}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{front1.png}
+    \caption{Home Page of FamilyCare 360 }
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{front2.png}
+    \caption{Key Features}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{front3.png}
+    \caption{Key Roles}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{signin.png}
+    \caption{Login Page}
+\end{figure}
+
+\vspace{4cm}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{create account.png}
+    \caption{User Registration Page }
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{User interface.jpg}
+    \caption{User Dashboard Overview}
+\end{figure}
+\vspace{3cm}
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{doctor interface.jpg}
+    \caption{Doctor Dashboard Overview}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{admindashboard.jpg}
+    \caption{System Administration Dashboard}
+\end{figure}
+
+% ======================= CHAPTER 8 =======================
+\chapter{CONCLUSION AND FUTURE SCOPE}
+
+\section{Conclusion}
+
+\hspace{1cm} FamilyCare 360 provides a centralized platform for managing family healthcare information. It supports digital health records, vital monitoring, appointments, prescriptions, and medicine reminders, and it allows doctors to monitor patient information, provide prescriptions, consultation notes, and personalized diet plans. Role-based access provides appropriate access for the System Admin, Doctor, and User.
+
+By bringing families and doctors together on a single platform, the system improves communication, supports timely healthcare management, reduces the dependence on paper-based records, and addresses the gap identified in the literature between hospital systems, individual monitoring tools, and emergency donor search.
+
+\section{Future Scope}
+
+\begin{enumerate}
+
+\item \textbf{Wearable Device Integration:}
+Collecting vital signs automatically from smartwatches and medical devices to reduce manual entry.
+
+\item \textbf{Mobile Application:}
+Developing a dedicated Android and iOS application for easier access and push notifications.
+
+\item \textbf{SMS and Email Alerts:}
+Adding SMS and email notifications for medicines, appointments, and emergencies.
+
+\item \textbf{Video Consultation:}
+Allowing online video consultation between users and doctors.
+
+\item \textbf{Analytics and Health Insights:}
+Adding charts and trend analysis of vital signs to help detect health risks early.
+
+\item \textbf{Wider User Evaluation:}
+Evaluating the application with a larger and more diverse group of users and improving security measures such as encryption of sensitive records.
+
+\end{enumerate}
+
+\vspace{2cm}
+
+% ======================= REFERENCES =======================
+\renewcommand{\bibname}{\uppercase{REFERENCES}}
+
+\begin{thebibliography}{999}
+
+\addcontentsline{toc}{chapter}{\hspace{0.19in} REFERENCES}
+
+\bibitem{one}
+F. A. C. Farias, C. M. Dagostini, Y. A. Bicca, V. F. Falavigna, and A. Falavigna, ``Remote patient monitoring: A systematic review,'' \textit{Telemedicine and e-Health}, vol. 26, no. 5, pp. 576--583, May 2020.
+
+\bibitem{two}
+L. C. Armitage, A. Kassavou, and S. Sutton, ``Do mobile device apps designed to support medication adherence demonstrate efficacy? A systematic review of randomised controlled trials, with meta-analysis,'' \textit{BMJ Open}, vol. 10, Art. no. e032045, 2020.
+
+\bibitem{three}
+M. L. Taylor, E. E. Thomas, C. L. Snoswell, A. C. Smith, and L. J. Caffery, ``Does remote patient monitoring reduce acute care use? A systematic review,'' \textit{BMJ Open}, vol. 11, Art. no. e040232, 2021.
+
+\end{thebibliography}
+
+\end{document}

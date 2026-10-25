@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1250 920" width="1250" height="920">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .entity-box { fill: #ffffff; stroke: #000000; stroke-width: 2.5; }
+      .process-circle { fill: #ffffff; stroke: #000000; stroke-width: 2; }
+      .store-line { stroke: #000000; stroke-width: 2.2; }
+      .main-title { font-family: 'Arial', sans-serif; font-size: 22px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .proc-num { font-family: 'Arial', sans-serif; font-size: 13px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .proc-title { font-family: 'Arial', sans-serif; font-size: 12px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .entity-title { font-family: 'Arial', sans-serif; font-size: 14px; font-weight: bold; fill: #000000; text-anchor: middle; }
+      .store-title { font-family: 'Arial', sans-serif; font-size: 12px; font-weight: bold; fill: #000000; }
+      .flow-label { font-family: 'Arial', sans-serif; font-size: 10px; fill: #000000; font-weight: 600; }
+      .arrow { stroke: #000000; stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#000000" />
+    </marker>
+  </defs>
+
+  <rect width="100%" height="100%" class="bg" />
+
+  <!-- Main Title -->
+  <text x="625" y="40" class="main-title">DATA FLOW DIAGRAM (DFD) LEVEL 1: DETAILED SYSTEM PROCESSES</text>
+  <text x="625" y="62" font-family="Arial" font-size="12" font-style="italic" fill="#555" text-anchor="middle">(DeMarco &amp; Yourdon Functional Decomposition)</text>
+  <line x1="320" y1="72" x2="930" y2="72" stroke="#000000" stroke-width="1.5" />
+
+  <!-- EXTERNAL ENTITY 1: Patient / User -->
+  <rect x="40" y="380" width="150" height="120" class="entity-box" />
+  <text x="115" y="435" class="entity-title">PATIENT / USER</text>
+  <text x="115" y="455" font-family="Arial" font-size="11" fill="#444" text-anchor="middle">[External Entity]</text>
+
+  <!-- PROCESS 1.0: Manage Health Profile -->
+  <circle cx="360" cy="180" r="65" class="process-circle" />
+  <line x1="300" y1="150" x2="420" y2="150" stroke="#000000" stroke-width="1.2" />
+  <text x="360" y="142" class="proc-num">1.0</text>
+  <text x="360" y="175" class="proc-title">Manage Health</text>
+  <text x="360" y="195" class="proc-title">Profile &amp; Limits</text>
+
+  <!-- DATA STORE D1: Health Profile Store -->
+  <line x1="560" y1="155" x2="740" y2="155" class="store-line" />
+  <line x1="560" y1="205" x2="740" y2="205" class="store-line" />
+  <text x="575" y="185" class="store-title">D1</text>
+  <text x="605" y="185" class="store-title">Health Profile Store</text>
+
+  <!-- Flows for 1.0 -->
+  <path d="M 120 380 L 120 180 L 295 180" class="arrow" />
+  <text x="130" y="170" class="flow-label">Biometrics, Diseases &amp; Meds</text>
+
+  <path d="M 425 180 L 560 180" class="arrow" />
+  <text x="440" y="172" class="flow-label">Save Profile</text>
+
+  <!-- PROCESS 2.0: Synthesize Clinical Prompts -->
+  <circle cx="360" cy="380" r="65" class="process-circle" />
+  <line x1="300" y1="350" x2="420" y2="350" stroke="#000000" stroke-width="1.2" />
+  <text x="360" y="342" class="proc-num">2.0</text>
+  <text x="360" y="375" class="proc-title">Synthesize</text>
+  <text x="360" y="395" class="proc-title">Clinical Context</text>
+
+  <!-- Flow Patient -> 2.0 -->
+  <path d="M 190 410 L 295 410" class="arrow" />
+  <text x="200" y="402" class="flow-label">Meal Type &amp; Cravings</text>
+
+  <!-- Flow D1 -> 2.0 -->
+  <path d="M 620 205 L 620 350 L 425 350" class="arrow" />
+  <text x="480" y="340" class="flow-label">Read Profile &amp; Targets</text>
+
+  <!-- PROCESS 3.0: Generate AI Recipes & Rationale -->
+  <circle cx="680" cy="380" r="65" class="process-circle" />
+  <line x1="620" y1="350" x2="740" y2="350" stroke="#000000" stroke-width="1.2" />
+  <text x="680" y="342" class="proc-num">3.0</text>
+  <text x="680" y="375" class="proc-title">Generate AI</text>
+  <text x="680" y="395" class="proc-title">Recipes &amp; Rationale</text>
+
+  <!-- Flow 2.0 -> 3.0 -->
+  <path d="M 425 380 L 615 380" class="arrow" />
+  <text x="450" y="372" class="flow-label">Structured Clinical Prompt</text>
+
+  <!-- EXTERNAL ENTITY 2: Gemini API -->
+  <rect x="1050" y="325" width="160" height="110" class="entity-box" />
+  <text x="1130" y="375" class="entity-title">GEMINI 3.5 FLASH</text>
+  <text x="1130" y="395" font-family="Arial" font-size="11" fill="#444" text-anchor="middle">[External AI API]</text>
+
+  <!-- Flows 3.0 <-> Gemini -->
+  <path d="M 745 365 L 1050 365" class="arrow" />
+  <text x="780" y="357" class="flow-label">POST generateContent</text>
+
+  <path d="M 1050 395 L 745 395" class="arrow" />
+  <text x="780" y="412" class="flow-label">JSON Candidates &amp; Rationale</text>
+
+  <!-- PROCESS 4.0: Validate Clinical Safety & DNI -->
+  <circle cx="680" cy="580" r="65" class="process-circle" />
+  <line x1="620" y1="550" x2="740" y2="550" stroke="#000000" stroke-width="1.2" />
+  <text x="680" y="542" class="proc-num">4.0</text>
+  <text x="680" y="575" class="proc-title">Screen Clinical</text>
+  <text x="680" y="595" class="proc-title">Safety &amp; DNI</text>
+
+  <!-- Flow 3.0 -> 4.0 -->
+  <path d="M 680 445 L 680 515" class="arrow" />
+  <text x="685" y="480" class="flow-label">Raw Candidate Recipes</text>
+
+  <!-- DATA STORE D3: Drug-Nutrient Catalog -->
+  <line x1="900" y1="555" x2="1080" y2="555" class="store-line" />
+  <line x1="900" y1="605" x2="1080" y2="605" class="store-line" />
+  <text x="915" y="585" class="store-title">D3</text>
+  <text x="945" y="585" class="store-title">DNI &amp; Clinical Catalog</text>
+
+  <!-- Flow D3 -> 4.0 -->
+  <path d="M 900 580 L 745 580" class="arrow" />
+  <text x="765" y="572" class="flow-label">DNI Rules &amp; Caps</text>
+
+  <!-- Flow 4.0 -> Patient (Verified Meals) -->
+  <path d="M 615 580 L 190 480" class="arrow" />
+  <text x="230" y="525" class="flow-label">Verified Recipes &amp; Adherence Rationale</text>
+
+  <!-- PROCESS 5.0: Scale Portions & Log Consumption -->
+  <circle cx="360" cy="720" r="65" class="process-circle" />
+  <line x1="300" y1="690" x2="420" y2="690" stroke="#000000" stroke-width="1.2" />
+  <text x="360" y="682" class="proc-num">5.0</text>
+  <text x="360" y="715" class="proc-title">Scale Portions &amp;</text>
+  <text x="360" y="735" class="proc-title">Log Consumed</text>
+
+  <!-- Flow Patient -> 5.0 -->
+  <path d="M 100 500 L 100 720 L 295 720" class="arrow" />
+  <text x="110" y="680" class="flow-label">Adjust Servings &amp; Confirm Log</text>
+
+  <!-- Flow 4.0 -> 5.0 -->
+  <path d="M 630 620 L 420 700" class="arrow" />
+  <text x="500" y="650" class="flow-label">Approved Recipe</text>
+
+  <!-- DATA STORE D2: Meal Plans & Daily Budget Store -->
+  <line x1="560" y1="790" x2="740" y2="790" class="store-line" />
+  <line x1="560" y1="840" x2="740" y2="840" class="store-line" />
+  <text x="575" y="820" class="store-title">D2</text>
+  <text x="605" y="820" class="store-title">Meal Plans &amp; Logs</text>
+
+  <!-- Flow 5.0 -> D2 -->
+  <path d="M 425 735 L 560 805" class="arrow" />
+  <text x="440" y="780" class="flow-label">Persist Meal Log</text>
+
+  <!-- PROCESS 6.0: Compile ADIME Clinical Records -->
+  <circle cx="950" cy="740" r="65" class="process-circle" />
+  <line x1="890" y1="710" x2="1010" y2="710" stroke="#000000" stroke-width="1.2" />
+  <text x="950" y="702" class="proc-num">6.0</text>
+  <text x="950" y="735" class="proc-title">Compile ADIME</text>
+  <text x="950" y="755" class="proc-title">Clinical Record</text>
+
+  <!-- Flow 4.0 -> 6.0 -->
+  <path d="M 725 625 L 895 715" class="arrow" />
+  <text x="730" y="685" class="flow-label">Assessment &amp; Audit Data</text>
+
+  <!-- Flow 6.0 -> Patient -->
+  <path d="M 950 805 L 950 880 L 70 880 L 70 500" class="arrow" />
+  <text x="320" y="870" class="flow-label">Standardized ADIME Chart Note (NCP)</text>
+</svg>

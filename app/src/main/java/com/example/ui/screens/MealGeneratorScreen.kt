@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -46,6 +47,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -100,7 +103,10 @@ fun MealGeneratorScreen(
   val fullDayPlan by viewModel.fullDayPlan.collectAsStateWithLifecycle()
   val isGenerating by viewModel.isGenerating.collectAsStateWithLifecycle()
   val selectedDateDisplay by viewModel.selectedDateDisplay.collectAsStateWithLifecycle()
+  val generationMode by viewModel.generationMode.collectAsStateWithLifecycle()
+  val fallbackNotice by viewModel.fallbackNotice.collectAsStateWithLifecycle()
 
+  var customPromptText by remember { mutableStateOf("") }
   val suggestedTimeType = remember { MealRecommendationEngine.getSuggestedMealTypeForCurrentTime() }
   val snackbarHostState = remember { SnackbarHostState() }
   val scope = rememberCoroutineScope()
@@ -203,6 +209,202 @@ fun MealGeneratorScreen(
                 fontWeight = FontWeight.Bold,
                 color = DeepTealDark
               )
+            }
+          }
+        }
+      }
+
+      // 1.5 Meal Generation Engine Mode (Gemini 3.5 Flash LLM vs Clinical Rules)
+      item {
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = WarmWhiteCard),
+          border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)),
+          modifier = Modifier.fillMaxWidth().testTag("generation_engine_mode_card")
+        ) {
+          Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                  imageVector = Icons.Default.AutoAwesome,
+                  contentDescription = null,
+                  tint = if (generationMode == NutriPathViewModel.MealGenerationMode.GEMINI_AI) DeepTealPrimary else TextMuted,
+                  modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                  Text(
+                    text = "Recommendation Engine",
+                    fontSize = 11.sp,
+                    color = TextMuted,
+                    fontWeight = FontWeight.Medium
+                  )
+                  Text(
+                    text = if (generationMode == NutriPathViewModel.MealGenerationMode.GEMINI_AI) "Gemini 3.5 Flash LLM (Personalized MNT)" else "Clinical Deterministic Rules",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DeepTealDark
+                  )
+                }
+              }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Selector Tabs
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              val isAi = generationMode == NutriPathViewModel.MealGenerationMode.GEMINI_AI
+              Box(
+                modifier = Modifier
+                  .weight(1f)
+                  .clip(RoundedCornerShape(10.dp))
+                  .background(if (isAi) DeepTealPrimary else Color(0xFFF3F6E6))
+                  .clickable { viewModel.setGenerationMode(NutriPathViewModel.MealGenerationMode.GEMINI_AI) }
+                  .padding(vertical = 8.dp)
+                  .testTag("engine_mode_gemini_ai"),
+                contentAlignment = Alignment.Center
+              ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = if (isAi) LimeYellowAccent else DeepTealDark,
+                    modifier = Modifier.size(14.dp)
+                  )
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text(
+                    text = "Gemini LLM",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isAi) Color.White else DeepTealDark
+                  )
+                }
+              }
+
+              Box(
+                modifier = Modifier
+                  .weight(1f)
+                  .clip(RoundedCornerShape(10.dp))
+                  .background(if (!isAi) DeepTealPrimary else Color(0xFFF3F6E6))
+                  .clickable { viewModel.setGenerationMode(NutriPathViewModel.MealGenerationMode.DETERMINISTIC_CATALOG) }
+                  .padding(vertical = 8.dp)
+                  .testTag("engine_mode_clinical_catalog"),
+                contentAlignment = Alignment.Center
+              ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Icon(
+                    imageVector = Icons.Default.HealthAndSafety,
+                    contentDescription = null,
+                    tint = if (!isAi) LimeYellowAccent else DeepTealDark,
+                    modifier = Modifier.size(14.dp)
+                  )
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text(
+                    text = "Clinical Rules",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (!isAi) Color.White else DeepTealDark
+                  )
+                }
+              }
+            }
+
+            // Natural Language Craving / Prompt Input when in Gemini LLM mode
+            if (generationMode == NutriPathViewModel.MealGenerationMode.GEMINI_AI && !selectedType.equals("Full-Day Plan", ignoreCase = true)) {
+              Spacer(modifier = Modifier.height(10.dp))
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                OutlinedTextField(
+                  value = customPromptText,
+                  onValueChange = { customPromptText = it },
+                  placeholder = { Text("Specific craving or note (e.g. warm lentil soup, quick 15-min)", fontSize = 11.sp) },
+                  modifier = Modifier.weight(1f).testTag("gemini_prompt_input"),
+                  singleLine = true,
+                  shape = RoundedCornerShape(10.dp),
+                  colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = DeepTealPrimary,
+                    unfocusedBorderColor = BorderSubtle,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
+                  )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                  onClick = {
+                    viewModel.generateRecommendations(selectedType, customPromptText)
+                  },
+                  shape = RoundedCornerShape(10.dp),
+                  colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary),
+                  contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                  modifier = Modifier.testTag("gemini_generate_btn")
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = "Generate",
+                    tint = LimeYellowAccent,
+                    modifier = Modifier.size(16.dp)
+                  )
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Fallback Notice (if API offline or key unconfigured)
+      if (fallbackNotice != null) {
+        item {
+          Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF3C7)),
+            border = BorderStroke(1.dp, Color(0xFFF59E0B)),
+            modifier = Modifier.fillMaxWidth().testTag("fallback_notice_card")
+          ) {
+            Row(
+              modifier = Modifier.padding(12.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = StatusWarningAmber,
+                modifier = Modifier.size(18.dp)
+              )
+              Spacer(modifier = Modifier.width(8.dp))
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                  text = "Deterministic Clinical Catalog Fallback",
+                  fontSize = 12.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = Color(0xFF92400E)
+                )
+                Text(
+                  text = fallbackNotice ?: "Local deterministic engine active.",
+                  fontSize = 11.sp,
+                  color = DarkCharcoalText,
+                  lineHeight = 15.sp
+                )
+              }
+              IconButton(
+                onClick = { viewModel.clearFallbackNotice() },
+                modifier = Modifier.size(24.dp)
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Close,
+                  contentDescription = "Dismiss",
+                  tint = Color(0xFF92400E),
+                  modifier = Modifier.size(14.dp)
+                )
+              }
             }
           }
         }
@@ -522,6 +724,32 @@ fun CandidateRecipeCard(
             fontWeight = FontWeight.SemiBold,
             color = DeepTealPrimary
           )
+          if (candidate.isAiGenerated) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Box(
+              modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFFE0F2FE))
+                .border(1.dp, Color(0xFF7DD3FC), RoundedCornerShape(6.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                  imageVector = Icons.Default.AutoAwesome,
+                  contentDescription = null,
+                  tint = Color(0xFF0284C7),
+                  modifier = Modifier.size(10.dp)
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+                Text(
+                  text = "Gemini LLM",
+                  fontSize = 10.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = Color(0xFF0369A1)
+                )
+              }
+            }
+          }
         }
 
         if (candidate.isSuggestedForCurrentTime) {
@@ -647,7 +875,58 @@ fun CandidateRecipeCard(
         )
       }
 
-      Spacer(modifier = Modifier.height(10.dp))
+      // Clinical Adherence Rationale Card (Base Research Paper Alignment)
+      if (candidate.clinicalRationale.isNotBlank()) {
+        Card(
+          shape = RoundedCornerShape(12.dp),
+          colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4)),
+          border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("clinical_rationale_card_${recipe.id}")
+        ) {
+          Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                tint = DeepTealPrimary,
+                modifier = Modifier.size(16.dp)
+              )
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = if (candidate.isAiGenerated) "Clinical Adherence Rationale (Gemini LLM)" else "Clinical Adherence Rationale",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = DeepTealDark
+              )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+              text = candidate.clinicalRationale,
+              fontSize = 11.sp,
+              color = DarkCharcoalText,
+              lineHeight = 16.sp
+            )
+            if (candidate.adherenceTips.isNotEmpty()) {
+              Spacer(modifier = Modifier.height(8.dp))
+              Text(
+                text = "Behavioral Adherence Tips:",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = DeepTealPrimary
+              )
+              candidate.adherenceTips.forEach { tip ->
+                Row(modifier = Modifier.padding(top = 2.dp)) {
+                  Text(text = "• ", fontSize = 10.sp, color = DeepTealPrimary, fontWeight = FontWeight.Bold)
+                  Text(text = tip, fontSize = 10.sp, color = DarkCharcoalText, lineHeight = 14.sp)
+                }
+              }
+            }
+          }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+      }
 
       // Independent Meal Safety Validator Badge with audit
       ValidationBadge(

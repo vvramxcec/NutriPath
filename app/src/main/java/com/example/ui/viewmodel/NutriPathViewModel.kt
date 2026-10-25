@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import android.content.Context
 import com.example.data.repository.AuthRepository
 import com.example.data.repository.CloudSyncRepository
+import com.example.data.repository.GeminiMealRepository
 import com.google.firebase.auth.FirebaseUser
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -30,11 +31,17 @@ import java.util.Locale
 
 class NutriPathViewModel(application: Application) : AndroidViewModel(application) {
 
+  enum class MealGenerationMode {
+    GEMINI_AI,
+    DETERMINISTIC_CATALOG
+  }
+
   private val database = NutriPathDatabase.getDatabase(application)
   private val healthProfileRepo = HealthProfileRepository(database.healthProfileDao())
   private val mealPlanRepo = MealPlanRepository(database.mealPlanDao())
   private val authRepo = AuthRepository()
   private val cloudSyncRepo = CloudSyncRepository(application)
+  private val geminiMealRepo = GeminiMealRepository()
 
   val currentUser: StateFlow<FirebaseUser?> = authRepo.authStateFlow
     .stateIn(viewModelScope, SharingStarted.Eagerly, authRepo.currentUser)
@@ -106,6 +113,12 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
 
   private val _isGenerating = MutableStateFlow(false)
   val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
+
+  private val _generationMode = MutableStateFlow(MealGenerationMode.GEMINI_AI)
+  val generationMode: StateFlow<MealGenerationMode> = _generationMode.asStateFlow()
+
+  private val _fallbackNotice = MutableStateFlow<String?>(null)
+  val fallbackNotice: StateFlow<String?> = _fallbackNotice.asStateFlow()
 
   private val _isOnboardingActive = MutableStateFlow(true)
   val isOnboardingActive: StateFlow<Boolean> = _isOnboardingActive.asStateFlow()
@@ -289,18 +302,46 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
     generateRecommendations(type)
   }
 
-  fun generateRecommendations(mealType: String = _selectedGenerationType.value) {
+  fun setGenerationMode(mode: MealGenerationMode) {
+    _generationMode.value = mode
+    generateRecommendations(_selectedGenerationType.value)
+  }
+
+  fun clearFallbackNotice() {
+    _fallbackNotice.value = null
+  }
+
+  fun generateRecommendations(
+    mealType: String = _selectedGenerationType.value,
+    customPrompt: String? = null
+  ) {
     viewModelScope.launch {
       _isGenerating.value = true
+      _fallbackNotice.value = null
       val profile = healthProfile.value
       if (mealType.equals("Full-Day Plan", ignoreCase = true)) {
         val plan = MealRecommendationEngine.generateFullDayPlan(_selectedDate.value, profile)
         _fullDayPlan.value = plan
         _generatedCandidates.value = emptyList()
       } else {
-        val list = MealRecommendationEngine.generateMealsForType(mealType, profile)
-        _generatedCandidates.value = list
-        _fullDayPlan.value = null
+        if (_generationMode.value == MealGenerationMode.GEMINI_AI) {
+          when (val result = geminiMealRepo.generatePersonalizedMeals(mealType, profile, customPrompt)) {
+            is GeminiMealRepository.GenerationResult.Success -> {
+              _generatedCandidates.value = result.candidates
+              _fallbackNotice.value = null
+              _fullDayPlan.value = null
+            }
+            is GeminiMealRepository.GenerationResult.Fallback -> {
+              _generatedCandidates.value = result.candidates
+              _fallbackNotice.value = result.fallbackReason
+              _fullDayPlan.value = null
+            }
+          }
+        } else {
+          val list = MealRecommendationEngine.generateMealsForType(mealType, profile)
+          _generatedCandidates.value = list
+          _fullDayPlan.value = null
+        }
       }
       _isGenerating.value = false
     }

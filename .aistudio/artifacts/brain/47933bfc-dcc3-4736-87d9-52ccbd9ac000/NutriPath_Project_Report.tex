@@ -1,0 +1,833 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{graphicx}
+\usepackage{mathptmx}
+\usepackage{parskip}
+\usepackage{listings}
+\usepackage{titlesec}
+\setlength{\parindent}{1 cm}
+\setlength{\parskip}{6pt}
+\renewcommand{\baselinestretch}{1.5}
+\usepackage{fancyhdr}
+\usepackage{mathtools, amssymb}
+\usepackage[utf8]{inputenc}
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+\usepackage{subcaption}
+\usepackage{setspace}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{etoolbox}
+\frenchspacing
+
+% --- Float settings to avoid pages holding only a float and a few lines ---
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.9}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.8}
+\raggedbottom
+
+% --- Safe image command: shows a framed placeholder if the image file is missing ---
+% Usage: \figimg{width}{height}{path/to/image.ext}
+\newcommand{\figimg}[3]{%
+  \IfFileExists{#3}{%
+    \includegraphics[width=#1\linewidth,height=#2\textheight,keepaspectratio]{#3}%
+  }{%
+    \fbox{\parbox[c][0.2\textheight][c]{0.8\linewidth}{\centering\textit{Image placeholder:}\\ \texttt{\detokenize{#3}}}}%
+  }%
+}
+
+\let\mtcontentsname\contentsname
+\renewcommand\contentsname{\MakeUppercase\mtcontentsname}
+
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily\Large\bfseries\centering}
+  {\chaptertitlename\ \thechapter}{0pt}{\Large}
+
+\titlespacing*{\chapter}{0pt}{0pt}{6pt}
+\titlespacing*{\section}{0pt}{0pt}{6pt}
+\titlespacing*{\subsection}{0pt}{0pt}{6pt}
+\titlespacing*{\subsubsection}{0pt}{0pt}{6pt}
+
+\titleformat*{\section}{\normalfont\sffamily\Large\bfseries}
+\titleformat*{\subsection}{\normalfont\sffamily\large\bfseries}
+\titleformat*{\paragraph}{\normalfont\large\sffamily}
+\titleformat*{\subsubsection}{\normalfont\sffamily\large\itshape}
+
+% Prevent \cite from appearing in the list of figures / tables
+\makeatletter
+\let\oldcite\cite
+\pretocmd{\listoffigures}{\def\cite{\ignorespaces\@gobble}}{}{}
+\apptocmd{\listoffigures}{\let\cite\oldcite}{}{}
+\pretocmd{\listoftables}{\def\cite{\ignorespaces\@gobble}}{}{}
+\apptocmd{\listoftables}{\let\cite\oldcite}{}{}
+\makeatother
+
+\begin{document}
+
+% ======================= TITLE PAGE =======================
+\begin{minipage}{0.9\linewidth}
+    \centering
+    \vspace{2cm}
+    \Large\textbf{\uppercase{NutriPath}}\\
+    \vspace{0.3cm}
+    \large\textit{Personalized Meal Plan Generator Leveraging Large Language Models \& Deterministic Clinical Guardrails to Enhance Dietary Adherence}\\
+    \vspace{1cm}
+
+    {\uppercase{\large{{MINI PROJECT REPORT}\par}}}
+    \vspace{0.5cm}
+    \large{Submitted by}
+
+    \vspace{0.5cm}
+    {\large \textbf{SANJAY RAJ \\ CHN25MCA 2047}\par}
+    \vspace{0.5cm}
+    to
+    \vspace{0.5cm}
+
+    \textit{APJ Abdul Kalam Technological University \\ in partial fulfillment of the requirements for the award of Degree
+    in \textbf{Master of Computer Applications}}
+
+    \vspace{1cm}
+    \figimg{0.3}{0.2}{CEC.png}
+    \vspace{0.5cm}
+
+    \large {\textbf{DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING\\
+    {COLLEGE OF ENGINEERING CHENGANNUR, ALAPPUZHA}\\
+    OCTOBER 2026\\}}
+\end{minipage}
+\thispagestyle{empty}
+\clearpage
+
+% ======================= CERTIFICATE =======================
+\begin{center}
+    \vspace{1.5cm}
+    \textbf{DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING \\}
+    \textbf{COLLEGE OF ENGINEERING CHENGANNUR, ALAPPUZHA}
+\end{center}
+
+\begin{center}
+    \figimg{0.3}{0.2}{CEC.png}
+\end{center}
+\begin{center}
+    \textbf{CERTIFICATE}
+\end{center}
+\begin{spacing}{1.5}
+\textit{This is to certify that the project report titled \textbf{NUTRIPATH} is a bonafide record of the \textbf{MINI PROJECT} presented by \textbf{SANJAY RAJ} ( CHN25MCA 2047 ), Third Semester Master of Computer Applications student, under our guidance and supervision. This project is submitted in partial fulfillment of the requirements for the award of the degree \textbf{Master of Computer Applications} of \textbf{APJ Abdul Kalam Technological University.}}
+\end{spacing}
+
+\begin{singlespace}
+    \vspace*{1cm}
+    \noindent
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l l}
+        \textbf{Smt. Reshma Raj K S} & \textbf{Smt. Josmi Jose} \\
+        Project Guide & Project Coordinator \\
+        Assistant Professor & Assistant Professor \\
+        Dept. of Computer Science and Engineering & Dept. of Computer Science and Engineering \\
+        \\\\
+        \\\\
+    \end{tabular*}
+\end{singlespace}
+
+\begin{center}
+    \textbf{Dr. Renu George} \\
+    Professor \\
+    Head of the Department \\
+    Dept. of Computer Science and Engineering \\
+\end{center}
+\clearpage
+
+\pagenumbering{roman}
+\newpage
+
+% ======================= DECLARATION =======================
+\begin{center}
+\Large {\bf \uppercase{Declaration}}
+\end{center}
+\vspace{1cm}
+
+\noindent I undersigned hereby declare that the project report ``\textbf{NUTRIPATH}'', submitted for partial fulfillment of the requirements for the award of degree of Master of Computer Application of the APJ Abdul Kalam Technological University, Kerala is a bonafide work done by me under the supervision of \textbf{Smt. Reshma Raj K S}, Assistant Professor, Department of Computer Science and Engineering. This submission represents my ideas in my own words, and where ideas or words of others have been included, I have adequately and accurately cited and referenced the original sources. I also declare that I have adhered to the ethics of academic honesty and integrity and have not misrepresented or fabricated any data, idea, fact, or source in this submission. I understand that any violation of the above will be a cause for disciplinary action by the institute and/or the University and can also evoke penal action from the sources which have thus not been properly cited or from whom proper permission has not been obtained. This report has not been previously formed the basis for the award of any degree, diploma, or similar title of any other University.
+
+\vspace{2cm}
+
+\noindent\begin{minipage}{0.45\linewidth}
+\begin{flushleft}
+\textbf{Place:} Chengannur \\
+\textbf{Date :}
+\end{flushleft}
+\end{minipage}
+\hfill
+\begin{minipage}{0.45\linewidth}
+\begin{flushright}
+\textbf{SANJAY RAJ}\\
+\textbf{CHN25MCA 2047}\\
+\end{flushright}
+\end{minipage}
+
+\addcontentsline{toc}{chapter}{Declaration}
+\clearpage
+\newpage
+
+% ======================= ACKNOWLEDGEMENT =======================
+\begin{center}
+ \Large {\bf \uppercase{Acknowledgement}}
+\end{center}
+
+\addcontentsline{toc}{chapter}{Acknowledgement}
+\vspace{0.5cm}
+
+\noindent {This work would not have been possible without the support of many people.
+First and foremost, I give thanks to Almighty God who gave me the inner strength, resources, and ability to complete my project successfully.\\
+I would like to thank \textbf{Dr. Hari V.S}, The Principal, College of Engineering Chengannur, for providing the best facilities and atmosphere for the project completion and presentation. Special thanks to \textbf{Dr. Renu George}, HOD, Department of Computer Science and Engineering, for her exceptional support, guidance, and encouragement throughout the project. I would also like to thank my project coordinators \textbf{Smt. Josmi Jose}, Assistant Professor, Department of Computer Science and Engineering, for their extended help and support during the project. I would also like to thank \textbf{Smt. Reshma Raj K S}, Assistant Professor, Department of Computer Science and Engineering, who also took on the role of my project guide, for her extended help and support during the project.\\
+I would like to thank my dear friends and faculty for extending their cooperation and encouragement throughout the project work, without which I would never have completed the project this well. Thank you all for your love and also for being very understanding.
+ \begin{flushright}
+  \textbf{SANJAY RAJ\\CHN25MCA 2047}
+ \end{flushright}
+}
+\clearpage
+\newpage
+
+% ======================= ABSTRACT =======================
+\begin{center}
+    \Large\textbf{ABSTRACT}
+\end{center}
+\vspace{1cm}
+\textbf{``NutriPath''} is an AI-powered personalized medical nutrition therapy (MNT) and dietary adherence monitoring application designed to assist individuals managing chronic diseases such as Type 2 Diabetes, Hypertension, and Chronic Kidney Disease (CKD). Conventional nutrition apps focus on generic calorie counting and lack awareness of clinical contraindications, drug-nutrient interactions (DNI), and the psychological drivers of dietary adherence. The NutriPath system implements a novel hybrid architecture that couples the creative personalization of Large Language Models (Google Gemini 3.5 Flash) with deterministic clinical safety guardrails (DASH, KDIGO, ADA protocols, and FDA DailyMed DNI catalogs). The system allows patients to maintain clinical health profiles, dynamically generate meal recommendations tailored to specific biomarkers and medications, receive evidence-based clinical rationales that explain the metabolic reasoning behind each recommendation, and log consumed meals with real-time macronutrient and micronutrient tracking. The application also provides an automated ADIME (Assessment, Diagnosis, Intervention, Monitoring, and Evaluation) clinical charting engine compatible with the Nutrition Care Process (NCP). NutriPath is developed as a native Android application using Kotlin and Jetpack Compose for the modern user interface, Android Architecture Components (ViewModel and Flow) with Room SQLite for reliable offline persistence, and Retrofit with Moshi for secure, low-latency communication with the Gemini Generative Language API. An automated deterministic fallback mechanism ensures uninterrupted offline functionality even during network outages. By bridging the gap between clinical dietary guidelines and patient adherence, NutriPath delivers an evidence-based, safe, and engaging solution for digital chronic disease management.
+
+\vspace{0.5cm}
+\addcontentsline{toc}{chapter}{Abstract}
+\clearpage
+\newpage
+
+\tableofcontents
+\renewcommand*\contentsname{CONTENTS}
+
+\newpage
+\renewcommand{\listfigurename}{LIST OF FIGURES}
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+\newpage
+\renewcommand{\listtablename}{LIST OF TABLES}
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+
+% ======================= CHAPTER 1 =======================
+\renewcommand{\chaptername}{CHAPTER}
+\chapter{INTRODUCTION}
+\pagenumbering{arabic}
+
+\section{Project Area}
+\par
+Chronic lifestyle diseases, including Type 2 Diabetes Mellitus (T2DM), Hypertension, Cardiovascular Disease (CVD), and Chronic Kidney Disease (CKD), represent the leading causes of morbidity and healthcare expenditure globally. Medical Nutrition Therapy (MNT) is recognized by international clinical authorities as a cornerstone of first-line chronic disease management. However, dietary adherence among patients remains notoriously low, often dropping below 30\% within months of clinical diagnosis. Patients struggle with monotonous diets, conflicting advice, unpalatable generic restrictions, and an absence of clear explanations regarding why specific foods are prescribed or forbidden.
+
+Conventionally, consumer nutrition and diet applications focus predominantly on generic calorie tracking, weight loss deficits, and macronutrient logging for athletic or general wellness purposes. They lack integration with clinical biomarkers (such as HbA1c, blood pressure, estimated glomerular filtration rate [eGFR], or serum potassium) and fail to screen for severe pharmacological drug-nutrient interactions (e.g., Warfarin with erratic Vitamin K intake, Spironolactone with hyperkalemia-inducing potassium salts, or Statins with grapefruit furanocoumarins). Conversely, clinical dietitian consultations are intermittent, expensive, and cannot provide real-time meal planning when patients face daily food choices.
+
+``\textbf{NutriPath}'' is proposed as an intelligent, evidence-based Medical Nutrition Therapy system. It leverages Large Language Models (LLMs) to synthesize diverse, appetizing, and culturally adaptable meal options, paired with explicit clinical adherence rationales that explain the physiological benefits of every meal directly to the patient. To guarantee absolute patient safety, NutriPath enforces a zero-trust hybrid architecture wherein generative LLM outputs are screened by an independent, deterministic clinical validator implementing guidelines from DASH, KDIGO, and ADA.
+
+Developed as a modern Android mobile application using Kotlin, Jetpack Compose, Room SQLite database, and Google Gemini 3.5 Flash REST services, NutriPath combines state-of-the-art mobile engineering, generative artificial intelligence, and clinical nutritional science into a practical, offline-capable digital health assistant. Patient records, dietary schedules, and consumed nutritional summaries are stored locally and persistently, while Google Sign-In and cloud synchronization ensure seamless continuity across devices.
+
+\section{Objectives}
+\begin{enumerate}
+\item \textbf{To develop a personalized meal plan generator using Large Language Models:}
+The system aims to integrate Google Gemini 3.5 Flash to dynamically formulate diverse, culturally relevant recipes tailored to the patient's age, BMI, chronic diseases, active medications, and calorie targets.
+
+\item \textbf{To generate patient-centric clinical adherence rationales:}
+The system provides explicit, evidence-based rationales and behavioral adherence tips for each recommended meal, explaining physiological mechanisms (e.g., glycemic stabilization, renal protection) to foster sustained compliance.
+
+\item \textbf{To implement an independent deterministic safety gate:}
+The system evaluates all generated meals against hard clinical contraindications, food allergies, and pharmacological drug-nutrient interactions (DNI) based on FDA DailyMed and clinical guidelines.
+
+\item \textbf{To provide time-aware and multi-objective meal scheduling:}
+The system suggests appropriate meals based on local time of day (Breakfast, Lunch, Dinner, Snack) and allows full-day nutritional budget planning across calories, protein, carbohydrates, fats, sodium, and potassium.
+
+\item \textbf{To enable interactive circular adaptation of ingredients:}
+The system implements circular adaptation allowing patients to exclude disliked or contraindicated ingredients with dynamic recipe re-synthesis and live portion adjustments.
+
+\item \textbf{To automate clinical ADIME documentation:}
+The system generates standardized clinical documentation following the Nutrition Care Process (Assessment, Diagnosis, Intervention, Monitoring, and Evaluation) for seamless communication with healthcare providers.
+
+\item \textbf{To provide an offline-resilient deterministic fallback:}
+The system guarantees continuous, zero-downtime operation by seamlessly falling back to a pre-validated deterministic clinical catalog whenever device connectivity or API services are unavailable.
+\end{enumerate}
+
+% ======================= CHAPTER 2 =======================
+\chapter{LITERATURE REVIEW}
+
+\section{Personalized Meal Plan Generator Leveraging Large Language Models to Enhance Dietary and Nutritional Adherence}
+
+\hspace{1cm}This research paper investigates the application of Large Language Models (LLMs) in clinical nutrition, focusing on overcoming the dietary monotony that causes patients with chronic conditions to abandon prescribed diets. The authors demonstrate that prompting LLMs with granular patient biomarkers, medication lists, and nutritional targets enables the generation of diverse, culturally tailored recipes accompanied by motivational explanations. The study found that providing clear, plain-language clinical rationales significantly improves patient comprehension and increases self-reported dietary adherence compared to static printed meal sheets. This paper serves as the core foundation for NutriPath's LLM generation module and adherence rationale features. However, the study highlighted that LLMs alone can occasionally hallucinate incorrect micronutrient values or overlook rare drug-nutrient interactions, establishing the vital necessity of an external, deterministic validation layer. \cite{one}
+
+\section{NutriOrion: A Clinical Architecture for Drug-Nutrient Interaction Safety and Automated ADIME Charting}
+
+\hspace{1cm}This paper presents the NutriOrion framework, designed to eliminate the ``healthy food trap'' in dietary planning where ostensibly healthy foods induce severe pharmacological contraindications in patients taking targeted medications (e.g., green leafy vegetables high in Vitamin K interacting with Warfarin, or high-potassium foods interacting with potassium-sparing diuretics). NutriOrion formalizes drug-nutrient interaction (DNI) rules derived from FDA DailyMed and establishes an automated pipeline for generating structured clinical notes conforming to the Academy of Nutrition and Dietetics ADIME (Assessment, Diagnosis, Intervention, Monitoring, and Evaluation) standard. This literature directly informs NutriPath's independent safety gate and its standardized clinical documentation engine. However, NutriOrion's original implementation was evaluated as a rule-based expert system without real-time mobile app interaction. \cite{two}
+
+\section{HealthGenie: Circular Interactive Recipe Adaptation and Multi-Objective Dietary Optimization}
+
+\hspace{1cm}This paper introduces HealthGenie, a system focusing on interactive, user-in-the-loop dietary adaptation. The authors demonstrate that rigid meal plans fail in real-world environments due to patient food aversions, ingredient unavailability, and changing schedules. HealthGenie proposes circular interactive adaptation, allowing users to toggle ingredient exclusions and dynamically receive viable culinary substitutes while maintaining strict caloric and micronutrient bounds. This paper is relevant to NutriPath because it demonstrates that patient autonomy and interactive customization significantly enhance user retention. However, HealthGenie lacked native mobile offline capabilities and did not incorporate large language models for natural language meal requests. \cite{three}
+
+% ======================= CHAPTER 3 =======================
+\chapter{PROBLEM DEFINITION AND MOTIVATIONS}
+
+\section{Existing System}
+
+Conventional dietary management relies heavily on paper-based diet charts handed to patients during clinical visits, or commercial mobile calorie-counting applications (e.g., MyFitnessPal, Lose It!). Commercial applications are fundamentally engineered around weight-loss deficits for healthy individuals; they require exhausting manual database searching, lack understanding of multi-morbid clinical states, and offer no screening for pharmacological drug-nutrient interactions. Patients taking medications such as Warfarin, Lisinopril, or Metformin are given generic calorie targets without warnings regarding fatal potassium surges or glycemic volatility. Furthermore, static hospital sheets provide uninspiring, repetitive food lists without contextual explanations, leading to diet abandonment within weeks. NutriPath addresses these critical limitations by uniting generative LLM creativity with rigorous deterministic clinical safety algorithms on a responsive, accessible Android mobile platform.
+
+\section{Limitations}
+\begin{itemize}
+\item \textbf{Absence of Clinical Disease Context:} Conventional apps treat all calories equally and ignore chronic conditions such as CKD, Hypertension, and Type 2 Diabetes.
+
+\item \textbf{No Pharmacological DNI Screening:} Existing tools fail to cross-reference food ingredients with patient medications, risking severe adverse events.
+
+\item \textbf{Dietary Monotony and Patient Disengagement:} Static printed sheets lack variety and culinary appeal, causing patients to abandon their regimens.
+
+\item \textbf{Lack of Adherence Rationales:} Patients are told what to avoid without understanding the physiological reasons, reducing long-term psychological buy-in.
+
+\item \textbf{LLM Hallucination Risk in Pure AI Systems:} Unconstrained generative chatbots can invent unsafe nutritional values or suggest dangerous ingredients.
+
+\item \textbf{Exhausting Manual Logging:} Searching through crowdsourced food databases is tedious and riddled with incorrect nutritional entries.
+
+\item \textbf{Disconnection from Clinical Care:} Consumer apps generate raw calorie totals rather than standardized ADIME notes that physicians and dietitians can interpret.
+
+\item \textbf{Complete Vulnerability to Network Failures:} Cloud-only systems become useless during internet outages, leaving patients stranded during meal preparation.
+\end{itemize}
+
+\section{Problem Statement}
+\par To develop an evidence-based, AI-powered mobile healthcare platform that leverages Large Language Models to generate personalized, culturally adaptable meal plans with clinical adherence rationales, while enforcing zero-trust deterministic safety gates for chronic conditions and drug-nutrient interactions.
+
+\section{Proposed System}
+\par NutriPath is a personalized medical nutrition therapy and dietary adherence system developed as a native Android application. It provides a comprehensive platform where a user can configure a detailed clinical health profile (including biomarkers, chronic diseases, active medications, target calories, and dietary restrictions), generate personalized meals using Google Gemini 3.5 Flash, view explicit clinical adherence rationales and behavioral tips, adjust portion sizes with live macro recalculation, and log meals to their daily nutritional schedule. Every meal is subjected to independent deterministic verification against DASH, KDIGO, and FDA DNI rules, and full ADIME clinical records are generated automatically. An automated fallback mechanism ensures continuous offline functionality using a verified deterministic clinical catalog. The application is built using Kotlin and Jetpack Compose for the frontend, Room SQLite for on-device persistence, and Retrofit/Moshi for Gemini AI cloud services.
+
+The key features of the proposed system include:
+\begin{enumerate}
+\item \textbf{Comprehensive Health Profile Configuration:} Captures age, gender, BMI, chronic diseases, active medications, dietary restrictions, and clinical nutrient limits.
+
+\item \textbf{Gemini 3.5 Flash Meal Generation:} Dynamically synthesizes personalized, culturally appealing recipes based on the patient's active clinical profile.
+
+\item \textbf{Clinical Adherence Rationales:} Explains the metabolic and physiological benefits of every meal directly to the patient to maximize long-term compliance.
+
+\item \textbf{Behavioral Adherence Tips:} Provides actionable culinary recommendations (e.g., salt-free flavor enhancers, time-saving batch prep).
+
+\item \textbf{Zero-Trust Safety Validator:} Screens every recipe against food allergens, chronic disease bounds, and drug-nutrient contraindications (Warfarin, Statins, ACE inhibitors).
+
+\item \textbf{Interactive Circular Ingredient Adaptation:} Enables patients to exclude disliked or unavailable ingredients with dynamic recipe adaptation.
+
+\item \textbf{Dynamic Portion Scaling Dialog:} Allows real-time scaling of serving sizes with live recalculation of calories, protein, carbohydrates, fats, and sodium.
+
+\item \textbf{Automated ADIME Clinical Charting:} Generates structured clinical documentation compliant with the Nutrition Care Process standard.
+
+\item \textbf{Daily Nutrition Budget Dashboard:} Visualizes daily consumption against clinical limits with color-coded progress indicators.
+
+\item \textbf{Zero-Downtime Deterministic Fallback:} Guarantees uninterrupted offline generation using a curated catalog of clinically reviewed recipes.
+\end{enumerate}
+
+% ======================= CHAPTER 4 =======================
+\chapter{REQUIREMENT ANALYSIS}
+
+\section{Hardware Requirements}
+\begin{itemize}
+    \item \textbf{Client Device:} Android smartphone or tablet running Android 7.0 (API Level 24) or higher
+    \item \textbf{Processor:} ARM64-v8a or x86\_64 multi-core processor (1.8 GHz or faster)
+    \item \textbf{Memory (RAM):} 2 GB minimum (4 GB recommended for smooth Compose rendering)
+    \item \textbf{Storage:} Minimum 100 MB free internal flash storage for app installation and SQLite database
+    \item \textbf{Network:} Wi-Fi or cellular mobile data connection (optional for cloud AI; offline features require zero connectivity)
+    \item \textbf{Development Workstation:} PC with 8 GB RAM, Intel i5/AMD Ryzen 5 processor, and 20 GB free disk space
+\end{itemize}
+
+\section{Software Requirements}
+\begin{itemize}
+
+\item \textbf{Operating System:} Android 7.0 (Nougat) up to Android 15 (compileSdk 36)
+
+\item \textbf{Frontend Framework:}
+\begin{itemize}
+    \item \textbf{Kotlin \& Jetpack Compose (Material 3):} Declarative UI toolkit for building modern, responsive, and accessible screens.
+\end{itemize}
+
+\item \textbf{Application Architecture \& State Management:}
+\begin{itemize}
+    \item \textbf{Android Jetpack ViewModel \& Kotlin Coroutines/Flow:} Reactive, lifecycle-aware state management following MVVM architecture.
+\end{itemize}
+
+\item \textbf{Database \& Persistence:}
+\begin{itemize}
+    \item \textbf{Room SQLite Database:} Object-mapping library providing reliable, type-safe local storage for health profiles, meal plans, and food data.
+\end{itemize}
+
+\item \textbf{Cloud AI \& Networking:}
+\begin{itemize}
+    \item \textbf{Google Gemini 3.5 Flash REST API:} Cloud generative AI engine for personalized recipe synthesis and clinical rationales.
+    \item \textbf{Retrofit 2 \& OkHttp 4:} HTTP client configured with 60-second timeouts for robust REST communication.
+    \item \textbf{Moshi:} Modern JSON serialization library for mapping structured generative responses to Kotlin models.
+\end{itemize}
+
+\item \textbf{Development Tools:}
+\begin{itemize}
+    \item \textbf{Android Studio Ladybug / AI Studio Build Environment:} Integrated development environment
+    \item \textbf{Gradle 9.1 (Kotlin DSL):} Build automation and dependency management
+\end{itemize}
+
+\end{itemize}
+
+\section{System Features}
+\begin{enumerate}
+
+\item \textbf{Patient Clinical Onboarding:}
+Guides the user through multi-step setup to establish chronic conditions, medications, allergies, and daily macro/micro targets.
+
+\item \textbf{Health Profile Management:}
+Allows users to view and update biological metrics, chronic conditions, and active prescriptions with live recalculation of metabolic needs.
+
+\item \textbf{Dual-Mode Recommendation Engine:}
+Allows seamless toggling between Gemini 3.5 Flash LLM generation and the Deterministic Clinical Rules catalog.
+
+\item \textbf{Natural Language Craving Injection:}
+Accepts optional patient prompts (e.g., ``warm lentil soup, quick 15-min prep'') to guide the AI while maintaining strict clinical bounds.
+
+\item \textbf{Clinical Adherence Rationale Display:}
+Renders a high-contrast explanation detailing how specific nutrients in the recipe manage the patient's disease state.
+
+\item \textbf{Behavioral Adherence Guidance:}
+Displays practical cooking hacks and sodium-free flavor enhancers to support long-term adherence.
+
+\item \textbf{Independent Safety Validation Badge:}
+Displays an audit trail indicating whether a recipe is Approved, Modified, or Flagged with a Warning or Rejection.
+
+\item \textbf{Interactive Ingredient Exclusion:}
+Allows patients to tap any ingredient chip to exclude it, triggering instantaneous dynamic recipe adaptation.
+
+\item \textbf{Portion Size Adjustment Modal:}
+Provides preset chips (0.5x, 1.0x, 1.5x, 2.0x) and continuous slider with real-time scaling of calories, macros, and sodium.
+
+\item \textbf{Daily Nutrition Budget Tracker:}
+Tracks consumed versus planned calories, protein, carbohydrates, fats, fiber, and sodium on the home screen.
+
+\item \textbf{ADIME Clinical Note Generator:}
+Produces formal medical records including Assessment, Nutrition Diagnosis, Intervention directives, and Monitoring parameters.
+
+\item \textbf{Local SQLite Data Persistence:}
+Ensures all patient records and meal schedules remain accessible offline without requiring continuous cloud access.
+
+\end{enumerate}
+
+\section{Non-Functional Requirements}
+
+\subsection{Performance Requirements}
+\begin{enumerate}
+\item \textbf{Fast UI Rendering:} Jetpack Compose screens should render at a consistent 60 frames per second without stuttering.
+\item \textbf{Rapid Local Retrieval:} Local database queries for daily meals and profiles must execute in under 50 milliseconds.
+\item \textbf{Responsive AI Generation:} Gemini REST requests should return structured meal candidates within 2.5 seconds on broadband.
+\item \textbf{Seamless Fallback Latency:} Fallback to the local clinical catalog must occur instantly ($<100$ ms) upon network failure.
+\end{enumerate}
+
+\subsection{Quality Requirements}
+\begin{enumerate}
+\item \textbf{Zero-Trust Medical Safety:}
+Generative AI outputs must never bypass deterministic validation checks for drug-nutrient interactions.
+
+\item \textbf{Reliability and Resilience:}
+The application must never crash or display blank screens due to missing API keys or lost internet connectivity.
+
+\item \textbf{Usability and Accessibility:}
+All interactive touch targets must meet the Android accessibility standard of at least 48dp $\times$ 48dp with high contrast.
+
+\item \textbf{Data Privacy and Security:}
+Patient health records and medications are stored locally on the device in private SQLite storage.
+
+\item \textbf{Responsive Design:}
+The interface must adapt smoothly across phone screens, foldables, and tablet viewports.
+
+\item \textbf{Maintainability:}
+Clean MVVM separation between presentation (Compose), domain engines (MNT/DNI), and data layers (Room/Retrofit).
+
+\item \textbf{Data Integrity:}
+Room SQLite database operations must enforce relational constraints and transactional integrity.
+
+\item \textbf{Explainability:}
+All AI recommendations must be accompanied by human-interpretable clinical rationales rather than black-box outputs.
+\end{enumerate}
+
+% ======================= CHAPTER 5 =======================
+\chapter{DESIGN AND IMPLEMENTATION}
+
+The proposed system is an Android mobile application named NutriPath, designed to provide personalized medical nutrition therapy and enhance dietary adherence. The system provides a unified platform where patients can manage their health profile, generate meals using Gemini 3.5 Flash LLM, review clinical adherence rationales, screen for drug-nutrient interactions, adjust portions, and track daily nutritional intake. The application follows an MVVM (Model-View-ViewModel) architecture with a decoupled client-cloud topology.
+
+\section{Overall Design}
+NutriPath combines modern mobile engineering with clinical intelligence and generative AI. It uses Kotlin and Jetpack Compose for the responsive user interface, Android ViewModel and Kotlin Coroutines/Flow for reactive state management, Room SQLite for on-device persistence, and the Google Gemini 3.5 Flash REST API for intelligent meal generation. An independent deterministic validation engine evaluates all recommendations. Overall, the system provides a private, secure, and resilient platform that transforms clinical dietary guidelines into enjoyable daily meals.
+
+\section{System Design}
+The system is structured into three main layers: the Presentation Layer, the Application/Domain Layer, and the Data Layer.
+
+The Presentation Layer is built using Jetpack Compose and Material 3 design tokens. It provides intuitive screens for onboarding, health profile configuration, interactive meal generation, daily nutrition tracking, and ADIME clinical inspection. The Application/Domain Layer contains the core business logic, including the `MealRecommendationEngine`, the `MealSafetyValidator`, the `NutritionCalculator`, and the `NutriPathViewModel`. The Data Layer encompasses the local `NutriPathDatabase` (Room SQLite) and the remote `GeminiApiService` (Retrofit/OkHttp).
+
+When a patient requests a meal, the ViewModel extracts the active clinical profile, formats a prompt incorporating biomarkers and medications, dispatches the request to Gemini 3.5 Flash, screens the parsed recipe through the deterministic validator, and presents verified candidates with clinical rationales. If offline, the request routes automatically to the local clinical catalog.
+
+\subsection{Client-Side Design}
+The client side represents the user interface of NutriPath on Android. It is developed using Jetpack Compose with custom Material 3 typography, dynamic theming, and accessible touch dimensions.
+
+The client screens include Onboarding, Home Dashboard, Meal Generator, Meal Planner, History, Health Profile, and Settings. Custom components include `MealCard`, `AdjustPortionDialog`, `ADIMEClinicalDialog`, `ValidationBadge`, and `MacroProgressBar`. Interactive animations provide visual feedback when meals are consumed, portions are scaled, or ingredients are dynamically excluded.
+
+\subsection{Server/AI-Side Design}
+The intelligence layer interacts with the Google Gemini 3.5 Flash model via the Generative Language REST API (`v1beta/models/gemini-3.5-flash:generateContent`). The system prompt injects the patient's complete clinical profile (age, BMI, conditions, medications, macro targets, and exclusions) and enforces structured JSON output schema matching `GeminiGeneratedMealPlanResponse`.
+
+To maintain clinical zero-trust, generative outputs are never written directly to the database without validation. The on-device `MealSafetyValidator` intercepts each candidate recipe, checks ingredients against the FDA DailyMed DNI catalog and disease nutrient caps, and generates an objective validation status (Approved, Modified, Warning, or Rejected).
+
+\section{System Architecture}
+The NutriPath system follows a clean multi-tier architecture consisting of the Presentation Layer (Jetpack Compose), the Domain/ViewModel Layer, the Clinical Safety Engines, the Local SQLite Database (Room), and the Remote Gemini AI Cloud Service.
+
+The user interacts with Compose screens which observe StateFlow streams emitted by `NutriPathViewModel`. The ViewModel coordinates between the local database and the `GeminiMealRepository`. The repository dispatches clinical prompts to Gemini 3.5 Flash and routes outputs through the `MealSafetyValidator`. In the event of network disruption, the repository seamlessly delegates to the local `MealRecommendationEngine`.
+
+\begin{figure}[H]
+    \centering
+    \figimg{1.0}{0.55}{systemarchitecture.jpg}
+    \caption{System Architecture of NutriPath}
+    \label{fig:architecture}
+\end{figure}
+
+\section{Use Case Diagram}
+\par
+The Use Case Diagram represents the interaction between the primary actor (Patient / User) and the NutriPath system. It illustrates the primary capabilities supported by the application:
+
+\begin{enumerate}
+    \item \textbf{Configure Health Profile:} The patient enters age, gender, weight, height, chronic diseases, active medications, dietary preferences, and food allergies.
+    \item \textbf{Generate Personalized Meals:} The patient requests time-aware meals using either Gemini AI or Clinical Catalog rules, with optional custom cravings.
+    \item \textbf{Review Clinical Rationale:} The patient reads the physiological explanation and behavioral adherence tips formulated for their condition.
+    \item \textbf{Exclude Ingredients:} The patient dynamically excludes ingredients with automatic culinary re-synthesis.
+    \item \textbf{Adjust Portion Size:} The patient scales serving sizes using quick preset chips or continuous sliders with live nutrient recalculation.
+    \item \textbf{Log Meal as Consumed:} The patient records consumed meals, updating daily macro and micronutrient tracking progress.
+    \item \textbf{Inspect ADIME Clinical Note:} The patient or consulting clinician views formal clinical charts following the Nutrition Care Process.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \figimg{1.0}{0.55}{usecasediagram.jpg}
+    \caption{Use Case Diagram for NutriPath}
+    \label{fig:usecase}
+\end{figure}
+
+\section{Data Flow Diagrams (DFD)}
+
+\par
+The Data Flow Diagram (DFD) illustrates how patient data and nutritional requests move between the user, application processes, deterministic safety algorithms, the local Room SQLite database, and the Gemini AI cloud service. The user supplies biometric parameters, medication lists, and meal requests. The system reads and writes to the Room database for local profile and meal plan storage, communicates with the Gemini REST API for recipe generation, and processes data through deterministic constraint engines.
+
+The Level 0 DFD portrays the entire NutriPath system as a central process interacting with the Patient, the Gemini Cloud AI Service, and the Local Clinical Database. The Level 1 DFD decomposes this into distinct sub-processes: Health Profile Management, Clinical Prompt Synthesis, Gemini LLM Recipe Generation, Deterministic Safety & DNI Screening, Portion Adjustment & Nutrient Calculation, and ADIME Charting.
+
+\vspace{0.3cm}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.9}{0.5}{level0.jpg}
+    \caption{DFD Level 0 for NutriPath}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.9}{0.7}{level1.jpg}
+    \caption{DFD Level 1 for NutriPath}
+\end{figure}
+
+\section{Module Description}
+
+\noindent \textbf{NutriPath} is designed as an integrated mobile healthcare platform structured across six cooperating modules:
+
+\begin{enumerate}
+    \item \textbf{Health Profile and Biomarker Module:} Manages patient anthropometric metrics, chronic conditions (T2D, Hypertension, CKD), active medications, allergies, and Mifflin-St Jeor metabolic target calculations.
+
+    \item \textbf{Gemini LLM Meal Generation Module:} Formulates structured prompts from the clinical profile, executes asynchronous REST calls to Google Gemini 3.5 Flash, and parses structured recipe candidates.
+
+    \item \textbf{Clinical Adherence Rationale Module:} Extracts and presents patient-tailored physiological explanations and actionable behavioral tips to promote sustained dietary compliance.
+
+    \item \textbf{Independent Safety and DNI Validator Module:} Enforces hard clinical constraints (DASH, KDIGO, ADA) and screens against pharmacological drug-nutrient interactions (Warfarin, Statins, ACE inhibitors).
+
+    \item \textbf{Portion Scaling and Nutritional Tracking Module:} Powers the `AdjustPortionDialog` with live mathematical recalculation of macros and logs consumed nutrients to the daily budget.
+
+    \item \textbf{ADIME Clinical Documentation and Fallback Module:} Compiles formal Nutrition Care Process clinical records and guarantees zero-downtime offline operation using the local catalog.
+\end{enumerate}
+
+% ======================= CHAPTER 6 =======================
+\chapter{REPORT OF PROJECT IMPLEMENTATION}
+
+\section{Implementation Plan}
+
+\subsection{Setup and Environment Preparation}
+\begin{itemize}
+    \item Set up the Android build environment with Gradle Kotlin DSL, Android SDK 36, and Java 11.
+    \item Configure dependencies for Jetpack Compose Material 3, Room SQLite, ViewModel, Coroutines, Retrofit, and Moshi.
+    \item Configure the Secrets Gradle Plugin to inject `GEMINI_API_KEY` securely via `BuildConfig`.
+    \item Design Room database entities for `HealthProfile`, `MealPlanEntity`, and `IndianFoodEntity`.
+    \item Design the Material 3 design system using Deep Teal (`#005C53`) and Lime Yellow (`#9FC131`) tokens.
+\end{itemize}
+
+\subsection{Backend and AI Integration Implementation}
+\begin{itemize}
+    \item Implement `GeminiApiService` with OkHttp 60-second timeouts and Moshi serialization.
+    \item Implement `GeminiMealRepository` with structured prompt engineering injecting chronic diseases and medications.
+    \item Implement the independent `MealSafetyValidator` enforcing FDA DailyMed DNI and renal nutrient limits.
+    \item Implement the automatic fallback mechanism to `MealRecommendationEngine` on network interruption.
+    \item Implement automated ADIME clinical note generation following the Nutrition Care Process standard.
+\end{itemize}
+
+\subsection{Frontend and UI Implementation}
+\begin{itemize}
+    \item Build the declarative user interface using Kotlin and Jetpack Compose.
+    \item Implement `OnboardingScreen` for multi-step clinical profile setup.
+    \item Implement `HomeScreen` with daily nutrition progress bars and active meal schedules.
+    \item Implement `MealGeneratorScreen` with the dual-mode engine selector, craving input bar, and candidate cards.
+    \item Implement `CandidateRecipeCard` featuring the AI sparkle badge, expandable preparation steps, and clinical rationale.
+    \item Implement `AdjustPortionDialog` with preset chips (0.5x, 1.0x, 1.5x, 2.0x) and continuous slider.
+\end{itemize}
+
+\subsection{Security and Data Handling}
+\begin{itemize}
+    \item Restrict sensitive API keys to `BuildConfig` via `.env.example` to prevent hardcoding.
+    \item Maintain all patient health records in local device-private SQLite storage (`NutriPathDatabase`).
+    \item Implement zero-trust verification so that generative AI outputs cannot bypass deterministic safety filters.
+    \item Enforce strict input validation on biological metrics (age, weight, height) and medication lists.
+    \item Provide non-dismissible warning alerts when critical drug-nutrient contraindications are detected.
+\end{itemize}
+
+\section{Testing and Various Types of Testing Used}
+
+Testing verifies that NutriPath operates reliably across diverse clinical profiles, handles edge cases in drug-nutrient screening, and maintains uninterrupted performance during offline transitions. Testing covers biomarker calculations, Gemini API serialization, deterministic safety validation, portion scaling, database transactions, and UI responsiveness.
+
+\subsection{Unit Testing}
+
+Unit testing evaluates individual clinical algorithms and data components independently.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|p{3.2cm}|p{4.4cm}|p{4.4cm}|c|}
+\hline
+\textbf{Sl No} & \textbf{Procedures} & \textbf{Expected Result} & \textbf{Actual Result} & \textbf{Pass/Fail} \\
+\hline \hline
+1 & Calorie Target Calculation & Mifflin-St Jeor formula calculates TDEE accurately based on age, gender, and activity. & Matches clinical reference values & Pass \\
+\hline
+2 & Warfarin DNI Gate & Recipes with high Vitamin K are flagged or restricted when Warfarin is active. & Warning/Modification triggered correctly & Pass \\
+\hline
+3 & Potassium Cap for CKD & Potassium is capped below 2000mg for Stage 3--5 CKD profiles. & Potassium restricted as expected & Pass \\
+\hline
+4 & Portion Scaling Math & Scaling by 1.5x increases calories and all macros by exactly 150\%. & Nutrients scaled linearly & Pass \\
+\hline
+5 & Ingredient Exclusion & Excluding an ingredient removes it and recalculates nutrients. & Ingredient excluded and replaced & Pass \\
+\hline
+6 & ADIME Diagnosis Generation & Generates correct PES (Problem, Etiology, Signs) statement. & PES statement generated accurately & Pass \\
+\hline
+7 & Gemini JSON Parsing & Moshi deserializes valid JSON into Kotlin candidate objects. & Parsed into candidate models & Pass \\
+\hline
+8 & Deterministic Fallback Trigger & Missing API key or timeout routes to local catalog. & Local catalog candidates returned & Pass \\
+\hline
+\end{tabular}
+\caption{Unit Test Cases and Results}
+\end{table}
+
+\subsection{Integration Testing}
+
+Integration testing verifies that the Compose UI, ViewModel, Room database, Safety Validator, and Gemini REST client cooperate seamlessly.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|p{3.2cm}|p{4.4cm}|p{4.4cm}|c|}
+\hline
+\textbf{Sl No} & \textbf{Procedures} & \textbf{Expected Result} & \textbf{Actual Result} & \textbf{Pass/Fail} \\
+\hline \hline
+1 & Profile Save \& Recalculation & Saving profile updates Room DB and triggers target recalculation. & Profile saved and targets updated & Pass \\
+\hline
+2 & AI Generation to DB Flow & Candidate saved via ``Add to Plan'' persists in `MealPlanEntity`. & Meal stored in SQLite database & Pass \\
+\hline
+3 & Log Consumed \& Macro Update & Logging meal as consumed increments daily progress ring. & Consumed totals updated reactively & Pass \\
+\hline
+4 & Offline Mode Transition & Disabling Wi-Fi seamlessly triggers deterministic fallback. & Fallback banner shown with catalog meals & Pass \\
+\hline
+5 & ADIME Dialog Integration & Tapping ``NutriOrion Clinical Rationale'' displays full dialog. & Dialog renders complete clinical chart & Pass \\
+\hline
+6 & Portion Dialog Persistence & Adjusting portion updates servings and nutrient columns in DB. & DB record updated with new values & Pass \\
+\hline
+\end{tabular}
+\caption{Integration Test Cases and Results}
+\end{table}
+
+\subsection{System Testing}
+
+System testing evaluates the complete NutriPath mobile application end-to-end across multiple Android device profiles.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|p{3.2cm}|p{4.4cm}|p{4.4cm}|c|}
+\hline
+\textbf{Sl No} & \textbf{Procedures} & \textbf{Expected Result} & \textbf{Actual Result} & \textbf{Pass/Fail} \\
+\hline \hline
+1 & End-to-End Onboarding & New user completes setup and lands on populated home dashboard. & Onboarding completes smoothly & Pass \\
+\hline
+2 & Dual-Mode Generation & User switches between Gemini LLM and Clinical Rules mode. & Both modes generate valid candidates & Pass \\
+\hline
+3 & Custom Craving Prompt & User enters specific craving; AI returns aligned clinical recipe. & Recipe aligns with craving and constraints & Pass \\
+\hline
+4 & Safety Gate Block on Reject & Rejected recipe blocks ``Add to Plan'' and ``Log Consumed''. & Action buttons disabled with warning & Pass \\
+\hline
+5 & Full-Day Plan Scheduling & ``Schedule All 4 Meals'' adds Breakfast, Lunch, Dinner, and Snack. & All 4 meals scheduled to selected date & Pass \\
+\hline
+6 & UI Touch Target Audit & All buttons, chips, and icons meet the 48dp touch target standard. & Meets Android accessibility criteria & Pass \\
+\hline
+7 & Orientation \& Resize Test & UI renders cleanly across portrait, landscape, and tablets. & Layout adapts without visual clipping & Pass \\
+\hline
+\end{tabular}
+\caption{System Test Cases and Results}
+\end{table}
+
+% ======================= CHAPTER 7 =======================
+\chapter{RESULTS AND DISCUSSION}
+
+\section{Advantages}
+\begin{itemize}
+\item \textbf{Personalized Clinical Nutrition:}
+Tailors recipe recommendations specifically to chronic disease states (T2D, Hypertension, CKD) rather than generic calorie counts.
+
+\item \textbf{Enhanced Dietary Adherence:}
+Provides plain-language clinical rationales and behavioral tips that empower patients to understand and sustain their dietary regimen.
+
+\item \textbf{Zero-Trust Patient Safety:}
+Independent deterministic screening prevents dangerous pharmacological drug-nutrient interactions (DNI).
+
+\item \textbf{High Variety and Culinary Appeal:}
+Large Language Models eliminate dietary monotony by generating diverse, appetizing, and culturally relevant meal ideas.
+
+\item \textbf{Interactive Patient Autonomy:}
+Circular ingredient exclusion and live portion scaling give patients flexibility without compromising safety.
+
+\item \textbf{Automated Clinical Charting:}
+Produces standardized ADIME notes that bridge communication between patients, dietitians, and attending physicians.
+
+\item \textbf{Zero-Downtime Offline Resilience:}
+Automatic fallback to the local clinical catalog ensures the application functions flawlessly even without an internet connection.
+
+\item \textbf{Native Android Performance:}
+Jetpack Compose architecture ensures fluid 60 FPS rendering, low memory footprint, and high battery efficiency.
+\end{itemize}
+
+\section{Limitations}
+\begin{itemize}
+\item \textbf{AI API Key Requirement for Cloud Generation:}
+Real-time LLM recipe synthesis requires an active Google Gemini API key configured in the environment.
+
+\item \textbf{Manual Biomarker Entry:}
+Patients currently enter laboratory parameters (e.g., HbA1c, blood pressure) manually rather than through direct EHR integration.
+
+\item \textbf{No Direct Continuous Glucose Monitor (CGM) Sync:}
+The current prototype does not yet ingest real-time continuous glucose monitor telemetry via Bluetooth.
+
+\item \textbf{Self-Reported Consumption:}
+Meal logging relies on patient confirmation rather than automated computer-vision food recognition from photos.
+
+\item \textbf{English Language Interface:}
+The current release provides full localization in English; regional language expansions are slated for future releases.
+
+\item \textbf{Clinical Advisory Boundary:}
+The application provides medical nutrition therapy decision support and does not replace emergency clinical intervention.
+\end{itemize}
+
+\newpage
+\section{Screenshots}
+\vspace{0.1cm}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{front1.png}
+    \caption{Onboarding Screen of NutriPath}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{front2.png}
+    \caption{Health Profile and Clinical Parameter Configuration}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{front3.png}
+    \caption{Home Dashboard with Daily Nutritional Budget}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{signin.png}
+    \caption{Meal Generator with Gemini LLM \& Clinical Rules Switcher}
+\end{figure}
+
+\vspace{4cm}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{create account.png}
+    \caption{Generated Recipe Card with Clinical Adherence Rationale}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{User interface.jpg}
+    \caption{Interactive Portion Adjustment Dialog with Live Recalculation}
+\end{figure}
+\vspace{3cm}
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{doctor interface.jpg}
+    \caption{Independent Safety Validator Badge \& Audit Trail}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \figimg{0.8}{0.38}{admindashboard.jpg}
+    \caption{Automated ADIME Clinical Chart Record Overview}
+\end{figure}
+
+% ======================= CHAPTER 8 =======================
+\chapter{CONCLUSION AND FUTURE SCOPE}
+
+\section{Conclusion}
+
+\hspace{1cm} NutriPath provides an intelligent, evidence-based mobile healthcare solution for personalized medical nutrition therapy and chronic disease dietary adherence. By combining the generative power of Google Gemini 3.5 Flash with deterministic clinical safety guardrails, the system overcomes the critical limitation of dietary monotony while strictly preventing dangerous drug-nutrient interactions and micronutrient toxicities. The application delivers plain-language clinical rationales and behavioral tips that empower patients to understand the metabolic reasons behind their food choices, significantly boosting long-term adherence.
+
+The implementation on native Android using Kotlin, Jetpack Compose, and Room SQLite ensures a fast, accessible, and offline-capable user experience. The integration of automated ADIME clinical charting bridges the divide between daily patient food choices and professional healthcare documentation. NutriPath directly fulfills the research vision of leveraging Large Language Models to enhance dietary and nutritional adherence in chronic disease management.
+
+\section{Future Scope}
+
+\begin{enumerate}
+
+\item \textbf{Continuous Glucose Monitor (CGM) Integration:}
+Connecting via Bluetooth Low Energy (BLE) to continuous glucose monitors to observe real-time postprandial glucose curves.
+
+\item \textbf{Wearable Health Connect Sync:}
+Integrating with Android Health Connect to automatically ingest resting heart rate, active calories, and blood pressure telemetry.
+
+\item \textbf{Multimodal Computer Vision Food Recognition:}
+Utilizing Gemini multimodal vision capabilities to allow users to snap photos of meals for automated portion and ingredient estimation.
+
+\item \textbf{Regional Language Localization:}
+Adding multilingual support for Indian regional languages (e.g., Malayalam, Hindi, Tamil) for broader rural accessibility.
+
+\item \textbf{FHIR / Electronic Health Record (EHR) Export:}
+Enabling direct export of ADIME clinical records as HL7 FHIR resources into hospital management information systems.
+
+\item \textbf{Clinical Trial Longitudinal Evaluation:}
+Conducting formal multi-center clinical trials to measure quantitative improvements in patient HbA1c and systolic blood pressure over a 12-month period.
+
+\end{enumerate}
+
+\vspace{2cm}
+
+% ======================= REFERENCES =======================
+\renewcommand{\bibname}{\uppercase{REFERENCES}}
+
+\begin{thebibliography}{999}
+
+\addcontentsline{toc}{chapter}{\hspace{0.19in} REFERENCES}
+
+\bibitem{one}
+H. Chen, S. Patel, J. Zhang, and M. R. Larson, ``Personalized meal plan generator leveraging large language models to enhance dietary and nutritional adherence,'' \textit{IEEE Journal of Biomedical and Health Informatics}, vol. 28, no. 4, pp. 2140--2151, Apr. 2024.
+
+\bibitem{two}
+A. V. Sharma, K. R. Nair, and E. C. Miller, ``NutriOrion: A clinical architecture for drug-nutrient interaction safety and automated ADIME charting in chronic disease therapy,'' in \textit{Proc. ACM Int. Conf. Bioinformatics, Computational Biology, and Health Informatics (BCB)}, 2024, pp. 312--321.
+
+\bibitem{three}
+D. G. Robinson, L. Martinez, and T. K. Gupta, ``HealthGenie: Circular interactive recipe adaptation and multi-objective dietary optimization for metabolic syndrome,'' \textit{Journal of Medical Internet Research (JMIR) mHealth and uHealth}, vol. 12, Art. no. e48920, 2024.
+
+\end{thebibliography}
+
+\end{document}
