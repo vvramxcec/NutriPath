@@ -63,6 +63,9 @@ import com.example.ui.theme.TextMuted
 import com.example.ui.theme.WarmWhiteCard
 import com.example.ui.viewmodel.NutriPathViewModel
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.example.ui.components.AdjustPortionDialog
 import java.util.Locale
 
 @Composable
@@ -107,67 +110,23 @@ fun HomeScreen(
   val consumedFib by viewModel.consumedFiber.collectAsStateWithLifecycle()
   val consumedSod by viewModel.consumedSodium.collectAsStateWithLifecycle()
 
+  val context = LocalContext.current
   var mealToEditServings by remember { mutableStateOf<MealPlanEntity?>(null) }
 
-  // Portion edit dialog
+  // High-contrast Adjust Portion Dialog with live recalculation
   if (mealToEditServings != null) {
     val meal = mealToEditServings!!
-    var portionFactor by remember(meal) { mutableFloatStateOf(meal.servings) }
-
-    AlertDialog(
-      onDismissRequest = { mealToEditServings = null },
-      title = {
-        Text(
-          text = "Adjust Portion Size",
-          fontWeight = FontWeight.Bold,
-          color = DarkCharcoalText
-        )
-      },
-      text = {
-        Column {
-          Text(
-            text = meal.recipeTitle,
-            fontSize = 14.sp,
-            color = DeepTealPrimary,
-            fontWeight = FontWeight.SemiBold
-          )
-          Spacer(modifier = Modifier.height(12.dp))
-          Text(
-            text = "Portion multiplier: ${String.format("%.1f", portionFactor)}x (${(meal.caloriesKcal / meal.servings * portionFactor).toInt()} kcal)",
-            fontSize = 13.sp,
-            color = DarkCharcoalText
-          )
-          Slider(
-            value = portionFactor,
-            onValueChange = { portionFactor = (Math.round(it * 2) / 2f).coerceIn(0.5f, 3.0f) },
-            valueRange = 0.5f..3.0f,
-            steps = 4
-          )
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            Text("0.5x (Half)", fontSize = 11.sp, color = TextMuted)
-            Text("1.0x (Regular)", fontSize = 11.sp, color = TextMuted)
-            Text("2.0x (Double)", fontSize = 11.sp, color = TextMuted)
-          }
-        }
-      },
-      confirmButton = {
-        Button(
-          onClick = {
-            viewModel.updateMealServings(meal, portionFactor)
-            mealToEditServings = null
-          },
-          colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary)
-        ) {
-          Text("Update Nutrients")
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = { mealToEditServings = null }) {
-          Text("Cancel", color = TextMuted)
-        }
+    AdjustPortionDialog(
+      meal = meal,
+      onDismiss = { mealToEditServings = null },
+      onConfirm = { newServings ->
+        viewModel.updateMealServings(meal, newServings)
+        mealToEditServings = null
+        Toast.makeText(
+          context,
+          "Portion updated to ${String.format(Locale.US, "%.1f", newServings)}x for '${meal.recipeTitle}'",
+          Toast.LENGTH_SHORT
+        ).show()
       }
     )
   }
@@ -310,6 +269,7 @@ fun HomeScreen(
         Button(
           onClick = {
             viewModel.generateAndApplyFullDayPlanForSelectedDate()
+            Toast.makeText(context, "Generating personalized clinical plan for $selectedDateDisplay...", Toast.LENGTH_SHORT).show()
           },
           enabled = !isGenerating,
           modifier = Modifier
@@ -451,10 +411,19 @@ fun HomeScreen(
       items(meals, key = { it.id }) { mealItem ->
         MealCard(
           meal = mealItem,
-          onLogConsumed = { id -> viewModel.markMealConsumed(id) },
-          onMarkPlanned = { id -> viewModel.markMealPlanned(id) },
+          onLogConsumed = { id ->
+            viewModel.markMealConsumed(id)
+            Toast.makeText(context, "Logged '${mealItem.recipeTitle}' as Consumed! (+${mealItem.caloriesKcal.toInt()} kcal)", Toast.LENGTH_SHORT).show()
+          },
+          onMarkPlanned = { id ->
+            viewModel.markMealPlanned(id)
+            Toast.makeText(context, "Marked '${mealItem.recipeTitle}' as Planned.", Toast.LENGTH_SHORT).show()
+          },
           onEditServings = { meal -> mealToEditServings = meal },
-          onDeleteMeal = { id -> viewModel.deleteMeal(id) },
+          onDeleteMeal = { id ->
+            viewModel.deleteMeal(id)
+            Toast.makeText(context, "Removed '${mealItem.recipeTitle}' from schedule.", Toast.LENGTH_SHORT).show()
+          },
           onModifyInPlanner = onNavigateToPlanner
         )
       }

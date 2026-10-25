@@ -23,6 +23,12 @@ interface MealPlanDao {
   @Query("SELECT * FROM meal_plans ORDER BY date DESC, id DESC")
   fun getAllMeals(): Flow<List<MealPlanEntity>>
 
+  @Query("SELECT * FROM meal_plans ORDER BY date DESC, id DESC")
+  suspend fun getAllMealsOnce(): List<MealPlanEntity>
+
+  @Query("SELECT * FROM meal_plans WHERE id = :id LIMIT 1")
+  suspend fun getMealById(id: Long): MealPlanEntity?
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertMeal(meal: MealPlanEntity): Long
 

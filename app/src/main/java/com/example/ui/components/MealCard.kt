@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -31,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +52,9 @@ import com.example.ui.theme.BorderSubtle
 import com.example.ui.theme.DarkCharcoalText
 import com.example.ui.theme.DeepTealDark
 import com.example.ui.theme.DeepTealPrimary
+import com.example.ui.theme.LimeYellowAccent
 import com.example.ui.theme.LimeYellowBackground
+import java.util.Locale
 import com.example.ui.theme.StatusApprovedBg
 import com.example.ui.theme.StatusApprovedGreen
 import com.example.ui.theme.StatusModifiedBg
@@ -258,69 +263,132 @@ fun MealCard(
         }
       }
 
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(14.dp))
 
-      // Action row: Log button, Edit portion, Expand details, Delete
+      // Action Section Tier 1: Prominent Log Action Button
+      if (!isConsumed) {
+        Button(
+          onClick = { onLogConsumed(meal.id) },
+          colors = ButtonDefaults.buttonColors(
+            containerColor = DeepTealPrimary,
+            contentColor = Color.White
+          ),
+          shape = RoundedCornerShape(12.dp),
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .testTag("log_meal_button_${meal.id}")
+        ) {
+          Icon(
+            imageVector = Icons.Default.CheckCircle,
+            contentDescription = null,
+            tint = LimeYellowAccent,
+            modifier = Modifier.size(18.dp)
+          )
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(
+            text = "Log as Consumed (${meal.caloriesKcal.toInt()} kcal)",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+          )
+        }
+      } else {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(StatusApprovedBg)
+            .border(1.dp, StatusApprovedGreen.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+              imageVector = Icons.Default.CheckCircle,
+              contentDescription = null,
+              tint = StatusApprovedGreen,
+              modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = "Logged as Consumed",
+              fontSize = 12.sp,
+              fontWeight = FontWeight.Bold,
+              color = StatusApprovedGreen
+            )
+          }
+          TextButton(
+            onClick = { onMarkPlanned(meal.id) },
+            modifier = Modifier.testTag("mark_planned_button_${meal.id}")
+          ) {
+            Text(
+              text = "Undo",
+              fontSize = 12.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = TextMuted
+            )
+          }
+        }
+      }
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      // Action Section Tier 2: Portion Adjuster & Utility Controls
       Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
       ) {
-        // Toggle Logged vs Planned
-        if (!isConsumed) {
-          Button(
-            onClick = { onLogConsumed(meal.id) },
-            colors = ButtonDefaults.buttonColors(containerColor = DeepTealPrimary),
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier.testTag("log_meal_button_${meal.id}")
-          ) {
-            Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(text = "Log Consumed", fontSize = 12.sp)
-          }
-        } else {
-          OutlinedButton(
-            onClick = { onMarkPlanned(meal.id) },
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextMuted),
-            modifier = Modifier.testTag("mark_planned_button_${meal.id}")
-          ) {
-            Icon(imageVector = Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(14.dp))
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(text = "Undo Log", fontSize = 11.sp)
-          }
+        // Interactive Portion Badge (Tapping opens Adjust Portion Dialog)
+        Row(
+          modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFFF1F5F0))
+            .clickable { onEditServings(meal) }
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .testTag("edit_servings_${meal.id}"),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = "Edit Portion",
+            tint = DeepTealPrimary,
+            modifier = Modifier.size(14.dp)
+          )
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = "Portion: ${String.format(Locale.US, "%.1f", meal.servings)}x",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = DeepTealDark
+          )
         }
 
+        // Secondary Utilities
         Row(verticalAlignment = Alignment.CenterVertically) {
           if (onModifyInPlanner != null) {
             IconButton(
               onClick = onModifyInPlanner,
-              modifier = Modifier.testTag("modify_in_planner_${meal.id}")
+              modifier = Modifier
+                .size(36.dp)
+                .testTag("modify_in_planner_${meal.id}")
             ) {
               Icon(
                 imageVector = Icons.Default.Tune,
                 contentDescription = "Modify in Planner",
                 tint = DeepTealPrimary,
-                modifier = Modifier.size(19.dp)
+                modifier = Modifier.size(18.dp)
               )
             }
           }
 
           IconButton(
-            onClick = { onEditServings(meal) },
-            modifier = Modifier.testTag("edit_servings_${meal.id}")
-          ) {
-            Icon(
-              imageVector = Icons.Default.Edit,
-              contentDescription = "Edit Portion",
-              tint = TextMuted,
-              modifier = Modifier.size(18.dp)
-            )
-          }
-
-          IconButton(
             onClick = { isExpanded = !isExpanded },
-            modifier = Modifier.testTag("expand_meal_${meal.id}")
+            modifier = Modifier
+              .size(36.dp)
+              .testTag("expand_meal_${meal.id}")
           ) {
             Icon(
               imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -332,7 +400,9 @@ fun MealCard(
 
           IconButton(
             onClick = { onDeleteMeal(meal.id) },
-            modifier = Modifier.testTag("delete_meal_${meal.id}")
+            modifier = Modifier
+              .size(36.dp)
+              .testTag("delete_meal_${meal.id}")
           ) {
             Icon(
               imageVector = Icons.Default.DeleteOutline,

@@ -81,50 +81,23 @@ fun NutritionSummaryCard(
         .fillMaxWidth()
         .padding(18.dp)
     ) {
-      // Header with date & health goal indicator
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+      // Header with date
+      Column(
+        modifier = Modifier.fillMaxWidth()
       ) {
-        Column {
-          Text(
-            text = "Daily Nutrition Summary",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = DarkCharcoalText
-          )
-          Text(
-            text = selectedDateLabel,
-            fontSize = 12.sp,
-            color = TextMuted,
-            fontWeight = FontWeight.Medium
-          )
-        }
-
-        Box(
-          modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(LimeYellowBackground)
-            .border(1.dp, LimeYellowAccent, RoundedCornerShape(12.dp))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-              imageVector = Icons.Default.HealthAndSafety,
-              contentDescription = "Condition Active",
-              tint = DeepTealPrimary,
-              modifier = Modifier.size(14.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-              text = if (profile.medicalConditions.isNotEmpty()) profile.medicalConditions.first() else "Personalized",
-              fontSize = 11.sp,
-              fontWeight = FontWeight.Bold,
-              color = DeepTealDark
-            )
-          }
-        }
+        Text(
+          text = "Daily Nutrition Summary",
+          fontSize = 18.sp,
+          fontWeight = FontWeight.Bold,
+          color = DarkCharcoalText
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+          text = selectedDateLabel,
+          fontSize = 12.sp,
+          color = TextMuted,
+          fontWeight = FontWeight.Medium
+        )
       }
 
       Spacer(modifier = Modifier.height(16.dp))

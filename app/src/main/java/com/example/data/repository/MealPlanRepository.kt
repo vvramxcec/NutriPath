@@ -22,6 +22,14 @@ class MealPlanRepository(private val mealPlanDao: MealPlanDao) {
     return mealPlanDao.getAllMeals()
   }
 
+  suspend fun getAllMealsOnce(): List<MealPlanEntity> {
+    return mealPlanDao.getAllMealsOnce()
+  }
+
+  suspend fun getMealById(id: Long): MealPlanEntity? {
+    return mealPlanDao.getMealById(id)
+  }
+
   suspend fun insertMeal(meal: MealPlanEntity): Long {
     return mealPlanDao.insertMeal(meal)
   }

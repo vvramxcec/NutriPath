@@ -59,6 +59,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.HealthProfile
 import com.example.data.model.MedicalConditionCatalog
@@ -115,6 +117,7 @@ fun HealthProfileScreen(
   var clinicianNotes by remember(originalProfile) { mutableStateOf(originalProfile.clinicianNotes) }
   var consentGiven by remember(originalProfile) { mutableStateOf(originalProfile.consentGiven) }
 
+  val context = LocalContext.current
   val snackbarHostState = remember { SnackbarHostState() }
   val scope = rememberCoroutineScope()
 
@@ -861,6 +864,7 @@ fun HealthProfileScreen(
             )
 
             viewModel.saveProfile(updated)
+            Toast.makeText(context, "Health profile & clinical safety rules updated!", Toast.LENGTH_SHORT).show()
             scope.launch {
               snackbarHostState.showSnackbar("Health profile & pharmacological safety rules updated successfully!")
             }

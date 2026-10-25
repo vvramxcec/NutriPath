@@ -129,7 +129,29 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
       } else {
         _isOnboardingActive.value = false
       }
-      // No pre-saved meals seeded: clean state for the user
+
+      authRepo.currentUser?.let { user ->
+        restoreUserDataFromCloud(user.uid)
+      }
+    }
+  }
+
+  private suspend fun restoreUserDataFromCloud(userId: String) {
+    try {
+      val cloudProfileRes = cloudSyncRepo.fetchProfileFromCloud(userId)
+      val cloudProfile = cloudProfileRes.getOrNull()
+      if (cloudProfile != null && cloudProfile.hasCompletedOnboarding) {
+        healthProfileRepo.saveProfile(cloudProfile)
+        _isOnboardingActive.value = false
+      }
+
+      val cloudMealsRes = cloudSyncRepo.fetchMealPlansFromCloud(userId)
+      val cloudMeals = cloudMealsRes.getOrNull() ?: emptyList()
+      if (cloudMeals.isNotEmpty()) {
+        mealPlanRepo.insertMeals(cloudMeals)
+      }
+    } catch (_: Exception) {
+      // Graceful offline fallback
     }
   }
 
@@ -238,6 +260,9 @@ class NutriPathViewModel(application: Application) : AndroidViewModel(applicatio
         )
       }
       mealPlanRepo.insertMeals(items)
+      authRepo.currentUser?.let { user ->
+        cloudSyncRepo.syncMealPlansToCloud(user.uid, items)
+      }
       _isGenerating.value = false
       onComplete()
     }
