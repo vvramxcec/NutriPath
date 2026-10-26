@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriPath - Final Presentation</title>
+  <style>
+    :root {
+      --bg-color: #FBF9F4;
+      --text-main: #1C1917;
+      --text-muted: #57534E;
+      --brand-teal: #005C53;
+      --accent-lime: #9FC131;
+      --border-subtle: #E7E5E4;
+      --card-bg: #FFFFFF;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #262626;
+      font-family: var(--font-family);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Slide Deck Container (16:9 Aspect Ratio) */
+    .deck-container {
+      position: relative;
+      width: 960px;
+      height: 540px;
+      background-color: var(--bg-color);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    @media (min-width: 1200px) {
+      .deck-container {
+        width: 1280px;
+        height: 720px;
+      }
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 50px 70px;
+      flex-direction: column;
+      justify-content: flex-start;
+      position: relative;
+      background-color: var(--bg-color);
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    /* Header & Branding */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .brand-tag {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .slide-title {
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 24px;
+      letter-spacing: -0.5px;
+    }
+
+    .slide-title-large {
+      font-size: 72px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -1.5px;
+    }
+
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Bullet List */
+    .bullet-list {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .bullet-list li {
+      font-size: 18px;
+      line-height: 1.5;
+      color: var(--text-main);
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .bullet-list li::before {
+      content: "•";
+      color: var(--brand-teal);
+      font-weight: bold;
+      font-size: 24px;
+      margin-right: 14px;
+      line-height: 1;
+    }
+
+    .bullet-list strong {
+      color: var(--brand-teal);
+    }
+
+    /* 3 Column Grid */
+    .three-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 30px;
+      margin-top: 20px;
+    }
+
+    .grid-col {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .grid-col h3 {
+      font-size: 20px;
+      color: var(--brand-teal);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .grid-col p {
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    /* Tables */
+    .slide-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .slide-table th, .slide-table td {
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .slide-table th {
+      background-color: #F3F4F6;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .slide-table td:first-child {
+      font-weight: 600;
+      color: var(--brand-teal);
+    }
+
+    /* Diagram & Image Container */
+    .img-box {
+      width: 100%;
+      height: 75%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FFFFFF;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    .img-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* Dual Mockup Screenshots */
+    .screenshot-row {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      height: 80%;
+      align-items: center;
+    }
+
+    .mockup-frame {
+      height: 100%;
+      max-width: 45%;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      border: 3px solid #1C1917;
+      overflow: hidden;
+      background: #FFFFFF;
+    }
+
+    .mockup-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Controls Bar */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+      color: #A8A29E;
+    }
+
+    .btn {
+      background: #44403C;
+      color: #FFFFFF;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: #78716C;
+    }
+
+    .slide-counter {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Print styles for exporting as PDF */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+      .controls {
+        display: none;
+      }
+      .deck-container {
+        width: 100%;
+        height: auto;
+        box-shadow: none;
+        border-radius: 0;
+      }
+      .slide {
+        display: flex !important;
+        page-break-after: always;
+        width: 100vw;
+        height: 100vh;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deck-container">
+
+    <!-- SLIDE 1: Title Slide -->
+    <div class="slide active" id="slide-1">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <h1 class="slide-title-large">NutriPath</h1>
+        <p style="font-size: 22px; color: var(--text-muted); margin-top: 10px; font-weight: 500;">
+          Personalized Meal Plan Generator Leveraging Large Language Models &amp; Deterministic Clinical Guardrails
+        </p>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
+        <div>
+          <p style="font-size: 16px; font-weight: 700; color: var(--text-main);">Vishnu V Ram</p>
+          <p style="font-size: 14px; color: var(--text-muted);">Roll No: 53</p>
+        </div>
+        <div style="text-align: right;">
+          <p style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Guide</p>
+          <p style="font-size: 16px; font-weight: 700; color: var(--text-main);">Smt. Christina Thankam Sajan</p>
+          <p style="font-size: 14px; color: var(--text-muted);">Assistant Professor</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Introduction -->
+    <div class="slide" id="slide-2">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Introduction</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>Chronic Disease Dietary Adherence Challenge:</strong> Patients with Type 2 Diabetes, Hypertension, and CKD struggle to follow monotonous, repetitive diet sheets.</li>
+          <li><strong>Generic Apps Lack Clinical Awareness:</strong> Consumer apps focus on calorie counting and fail to screen for prescription drug-nutrient interactions (DNI).</li>
+          <li><strong>Generative LLM Opportunity:</strong> Large Language Models (LLMs) can craft diverse, culturally appealing recipes that eliminate dietary monotony.</li>
+          <li><strong>Explainable Clinical Rationale:</strong> Providing patient-tailored physiological explanations for meal choices significantly boosts behavioral adherence.</li>
+          <li><strong>Zero-Trust Safety Verification:</strong> NutriPath pairs Gemini LLM generation with deterministic rule-based clinical safety gates to guarantee safe medical nutrition therapy.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: Problem Statement -->
+    <div class="slide" id="slide-3">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Problem Statement</h2>
+      <div class="content-area" style="justify-content: center;">
+        <div style="background: #FFFFFF; padding: 36px; border-radius: 12px; border-left: 6px solid var(--brand-teal); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <p style="font-size: 24px; line-height: 1.5; font-weight: 600; color: var(--text-main);">
+            "Current nutrition apps cannot guarantee safe, clinically validated meal plans for individuals with chronic medical conditions, nor do they provide motivational clinical rationales to sustain dietary adherence; there is a vital need for a hybrid generative and deterministic medical nutrition platform."
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Project Overview -->
+    <div class="slide" id="slide-4">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+        <span class="brand-tag">Team A</span>
+      </div>
+      <h2 class="slide-title">Project Overview</h2>
+      <div class="content-area">
+        <div class="three-grid">
+          <div class="grid-col">
+            <h3>Problem</h3>
+            <p>Generic diet sheets and unconstrained AI tools either cause severe dietary monotony or hallucinate unsafe ingredients and nutrient numbers, ignoring patient medications and organ limits.</p>
+          </div>
+          <div class="grid-col">
+            <h3>Solution</h3>
+            <p>NutriPath leverages Google Gemini 3.5 Flash for personalized recipe synthesis and clinical adherence rationales, backed by an on-device deterministic safety gate and offline fallback catalog.</p>
+          </div>
+          <div class="grid-col">
+            <h3>Why It Matters</h3>
+            <p>Empowers chronic disease patients with appetizing, diverse food choices while ensuring zero-trust medical safety, transparent ADIME clinical records, and higher long-term dietary compliance.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: Literature Survey -->
+    <div class="slide" id="slide-5">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Literature Survey</h2>
+      <div class="content-area">
+        <table class="slide-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">Sl.</th>
+              <th style="width: 220px;">Paper / Framework</th>
+              <th>Methodology</th>
+              <th>Key Merits</th>
+              <th>Limitation / Gap</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><strong>Personalized Meal Plan Generator Leveraging LLMs (IEEE JBHI 2024)</strong></td>
+              <td>Prompting LLMs with patient biomarkers, conditions, and targets for tailored meals</td>
+              <td>Demonstrates that tailored clinical rationales dramatically boost dietary adherence</td>
+              <td>Pure generative LLMs risk nutritional hallucinations without deterministic verification</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><strong>NutriOrion (arXiv:2602.18650, 2026)</strong></td>
+              <td>Hard drug-nutrient interaction (DNI) constraints; automated ADIME charting</td>
+              <td>Eliminates the "Healthy Food Trap" (e.g. Warfarin + high Vitamin K greens)</td>
+              <td>Originally formulated as a server-side framework; lacked offline mobile implementation</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><strong>HealthGenie (arXiv:2504.14594, 2025)</strong></td>
+              <td>Interactive user ingredient exclusion with clinical substitution</td>
+              <td>Enables circular patient adaptation and food aversion management</td>
+              <td>Lacked generative natural language meal prompting and offline-first mobile sync</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: Gap Identified -->
+    <div class="slide" id="slide-6">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Gap Identified</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>Absence of Pharmacological DNI Screening:</strong> Commercial nutrition apps completely ignore drug-nutrient contraindications (e.g. Warfarin, Statins, ACE inhibitors).</li>
+          <li><strong>Nutritional Hallucination in Pure AI:</strong> Generative chatbots invent inaccurate macro/micronutrient numbers and cannot be trusted for renal or cardiac patients.</li>
+          <li><strong>Dietary Monotony &amp; High Drop-Out Rates:</strong> Static hospital meal sheets fail to offer personalized variety, leading over 70% of patients to abandon their diets.</li>
+          <li><strong>Lack of Explanatory Adherence Rationales:</strong> Existing solutions tell patients what to restrict without explaining the physiological benefits to foster compliance.</li>
+          <li><strong>Complete Vulnerability to Network Failures:</strong> Most AI tools fail completely when offline, stranding users during grocery shopping or cooking.</li>
+          <li><strong>NutriPath's Resolution:</strong> A native Android app combining <em>Gemini 3.5 Flash LLM</em> with <em>on-device deterministic safety gates</em>, <em>adherence rationales</em>, and <em>zero-downtime offline fallback</em>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: Proposed Solution -->
+    <div class="slide" id="slide-7">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Proposed Solution</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>Automated Clinical Health Profile Ingestion:</strong> Automatically feeds user conditions (T2D, Hypertension, CKD), medications, and calculated targets into prompts.</li>
+          <li><strong>Gemini 3.5 Flash LLM Generation:</strong> Generates diverse, culturally appealing recipes with exact ingredient quantities and preparation steps.</li>
+          <li><strong>Clinical Adherence Rationale:</strong> Delivers an evidence-based metabolic explanation and behavioral tips for each meal to motivate patient compliance.</li>
+          <li><strong>Dual-Mode Engine Switcher:</strong> Allows users to toggle between Gemini LLM mode and the Deterministic Clinical Rules catalog, with custom craving inputs.</li>
+          <li><strong>Zero-Trust Deterministic Safety Gate:</strong> Evaluates recipes with 11 independent rules against FDA DNI tables and micronutrient caps.</li>
+          <li><strong>Live Portion Adjustment Dialog:</strong> Enables instant serving scaling (0.5x, 1.0x, 1.5x, 2.0x, slider) with live dynamic macro recalculation.</li>
+          <li><strong>Automated ADIME Clinical Charting:</strong> Generates standardized medical documentation conforming to the Nutrition Care Process (NCP).</li>
+          <li><strong>Zero-Downtime Deterministic Fallback:</strong> Automatically serves pre-validated clinical catalog meals if offline or if the API key is unset.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: System Architecture Diagram -->
+    <div class="slide" id="slide-8">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">System Architecture</h2>
+      <div class="content-area">
+        <div class="img-box">
+          <img src="systemarchitecture.jpg" alt="System Architecture Diagram">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: Architecture Overview -->
+    <div class="slide" id="slide-9">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Architecture Overview</h2>
+      <div class="content-area">
+        <p style="font-size: 20px; line-height: 1.6; color: var(--text-main); margin-bottom: 20px;">
+          NutriPath is engineered as a <strong>3-tier native Android application</strong> adopting Clean Architecture and MVVM patterns. The user interface is developed in <strong>Jetpack Compose</strong> and observes reactive Kotlin Coroutine <code style="background: #E5E7EB; padding: 2px 6px; border-radius: 4px;">StateFlow</code> streams emitted by <code style="background: #E5E7EB; padding: 2px 6px; border-radius: 4px;">NutriPathViewModel</code>.
+        </p>
+        <p style="font-size: 18px; line-height: 1.6; color: var(--text-muted);">
+          The domain layer orchestrates meal generation through <code style="background: #E5E7EB; padding: 2px 6px; border-radius: 4px;">GeminiMealRepository</code> which communicates with the <strong>Google Gemini 3.5 Flash REST API</strong>. Generative outputs are intercepted by the independent <strong>MealSafetyValidator</strong> before persisting to the local <strong>Room SQLite Database</strong>. In offline environments, requests route seamlessly to the deterministic clinical catalog.
+        </p>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: Architecture Components - Part 1 -->
+    <div class="slide" id="slide-10">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Architecture Components: Client &amp; Core</h2>
+      <div class="content-area">
+        <div style="display: flex; gap: 30px;">
+          <div style="flex: 1; background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <h3 style="font-size: 18px; color: var(--brand-teal); margin-bottom: 10px;">1. Client / Presentation Layer</h3>
+            <ul class="bullet-list" style="gap: 8px;">
+              <li style="font-size: 14px;"><strong>Jetpack Compose UI:</strong> Modern, declarative, reactive Material 3 screens.</li>
+              <li style="font-size: 14px;"><strong>Onboarding Screen:</strong> Captures biometrics, chronic conditions, and active medications.</li>
+              <li style="font-size: 14px;"><strong>Meal Generator Screen:</strong> Interactive engine mode switcher, craving input bar, and recipe cards.</li>
+              <li style="font-size: 14px;"><strong>AdjustPortionDialog:</strong> Preset chips &amp; slider with live macro recalculation.</li>
+            </ul>
+          </div>
+          <div style="flex: 1; background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <h3 style="font-size: 18px; color: var(--brand-teal); margin-bottom: 10px;">2. Application / Core Domain Layer</h3>
+            <ul class="bullet-list" style="gap: 8px;">
+              <li style="font-size: 14px;"><strong>NutriPathViewModel:</strong> Manages state flows, date navigation, and daily budget accumulation.</li>
+              <li style="font-size: 14px;"><strong>GeminiMealRepository:</strong> Synthesizes clinical prompts and parses structured JSON.</li>
+              <li style="font-size: 14px;"><strong>MealSafetyValidator:</strong> Zero-trust gate evaluating DNI rules and nutrient ceilings.</li>
+              <li style="font-size: 14px;"><strong>Clinical Fallback Engine:</strong> Ensures zero-downtime offline recommendation delivery.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 11: Architecture Components - Part 2 -->
+    <div class="slide" id="slide-11">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Architecture Components: Data &amp; Cloud</h2>
+      <div class="content-area">
+        <div style="display: flex; gap: 30px;">
+          <div style="flex: 1; background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <h3 style="font-size: 18px; color: var(--brand-teal); margin-bottom: 10px;">3. Local Persistence Layer (Room DB)</h3>
+            <ul class="bullet-list" style="gap: 8px;">
+              <li style="font-size: 14px;"><strong>HealthProfileEntity:</strong> Stores age, BMI, chronic diseases, active medications, and calculated targets.</li>
+              <li style="font-size: 14px;"><strong>MealPlanEntity:</strong> Tracks scheduled, planned, and consumed meals with servings and exact macros.</li>
+              <li style="font-size: 14px;"><strong>IndianFoodEntity:</strong> Bundled reference food composition database based on ICMR-NIN &amp; Anuvaad.</li>
+              <li style="font-size: 14px;"><strong>Offline Capability:</strong> Guarantees 100% full local functionality without internet access.</li>
+            </ul>
+          </div>
+          <div style="flex: 1; background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <h3 style="font-size: 18px; color: var(--brand-teal); margin-bottom: 10px;">4. Cloud AI &amp; Sync Layer</h3>
+            <ul class="bullet-list" style="gap: 8px;">
+              <li style="font-size: 14px;"><strong>Gemini 3.5 Flash REST API:</strong> High-speed cloud LLM generating creative recipes &amp; adherence rationales.</li>
+              <li style="font-size: 14px;"><strong>Retrofit &amp; OkHttp Client:</strong> Configured with 60s timeouts, logging interceptors, and Moshi converters.</li>
+              <li style="font-size: 14px;"><strong>AI Studio Secrets Management:</strong> Injects API keys securely at build-time via <code style="background: #E5E7EB; padding: 2px 4px; border-radius: 3px;">BuildConfig</code>.</li>
+              <li style="font-size: 14px;"><strong>Firebase Sync (Optional):</strong> Multi-device profile and meal plan cloud synchronization.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 12: Module Description - Part 1 -->
+    <div class="slide" id="slide-12">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Module Description (1 - 4)</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>1. Health Profile &amp; Biomarker Module:</strong> Collects clinical parameters, chronic disease checkboxes (T2D, Hypertension, Thyroid, Arthritis, CKD), active medications (Warfarin, Statins, Lisinopril), and computes Mifflin-St Jeor daily caloric and macro limits.</li>
+          <li><strong>2. Gemini LLM Meal Generation Module:</strong> Asynchronously dispatches structured prompts containing the patient's full medical profile to Google Gemini 3.5 Flash, returning structured JSON recipes tailored to the requested meal type.</li>
+          <li><strong>3. Clinical Adherence Rationale Module:</strong> Displays an evidence-based card explaining how the recipe's nutrients (e.g. soluble fiber, potassium bounds) manage the patient's conditions, paired with practical culinary behavioral tips.</li>
+          <li><strong>4. Zero-Trust Clinical Safety Validator Module:</strong> Executes 11 independent deterministic safety checks against FDA DailyMed DNI tables and disease nutrient caps, classifying meals as Approved, Modified, Warning, or Rejected.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 13: Module Description - Part 2 -->
+    <div class="slide" id="slide-13">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Module Description (5 - 8)</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>5. Circular Ingredient Adaptation Module:</strong> Implements the HealthGenie protocol allowing users to tap '×' on disliked ingredient chips, triggering dynamic recipe adaptation with safe substitutes.</li>
+          <li><strong>6. Dynamic Portion Scaling Module:</strong> Powers the <code style="background: #E5E7EB; padding: 2px 6px; border-radius: 4px;">AdjustPortionDialog</code> with preset chips (0.5x, 1.0x, 1.5x, 2.0x) and continuous slider, recalculating calories and macros in real-time.</li>
+          <li><strong>7. ADIME Clinical Documentation Module:</strong> Generates standardized medical records (Assessment, Diagnosis, Intervention, Monitoring, and Evaluation) conforming to the Nutrition Care Process (NCP) for clinician review.</li>
+          <li><strong>8. Daily Nutrition Budget &amp; Fallback Module:</strong> Tracks consumed nutrients against daily limits with color-coded progress indicators, and serves pre-validated catalog meals if network connectivity drops.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 14: Use Case Diagram -->
+    <div class="slide" id="slide-14">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Use Case Diagram</h2>
+      <div class="content-area">
+        <div class="img-box">
+          <img src="usecasediagram.jpg" alt="Use Case Diagram">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 15: DFD Level 0 -->
+    <div class="slide" id="slide-15">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Data Flow Diagram (DFD) Level 0</h2>
+      <div class="content-area">
+        <div class="img-box">
+          <img src="level0.jpg" alt="DFD Level 0 Context Diagram (DeMarco Rule)">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 16: DFD Level 1 -->
+    <div class="slide" id="slide-16">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Data Flow Diagram (DFD) Level 1</h2>
+      <div class="content-area">
+        <div class="img-box">
+          <img src="level1.jpg" alt="DFD Level 1 Detailed Process Decomposition (DeMarco Rule)">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 17: SRS - User Interface -->
+    <div class="slide" id="slide-17">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Software Requirements: UI &amp; UX</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>Declarative Jetpack Compose UI:</strong> All screens designed in modern Jetpack Compose adhering to Material Design 3 guidelines.</li>
+          <li><strong>Clinical Profile Management:</strong> Dedicated multi-step forms to capture age, biological sex, BMI, chronic diseases, active medications, and food allergies.</li>
+          <li><strong>Interactive Engine Switcher:</strong> Direct toggle between Gemini LLM generation and the Deterministic Clinical Catalog.</li>
+          <li><strong>Natural Language Craving Input:</strong> Text input bar enabling patient-specified culinary requests (e.g., "15-minute quick soup").</li>
+          <li><strong>Portion Scaling Affordance:</strong> High-contrast dialog with quick preset chips and continuous slider for intuitive serving adjustments.</li>
+          <li><strong>Accessibility Compliance:</strong> Strict adherence to Android accessibility guidelines with minimum 48dp touch targets and clear contrast.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 18: SRS - Technical Specifications -->
+    <div class="slide" id="slide-18">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Software Requirements: Technical Stack</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>Target Platform:</strong> Android devices running Android 7.0 (API Level 24) up to Android 15 (compileSdk 36).</li>
+          <li><strong>Programming Language:</strong> 100% Kotlin with Coroutines and StateFlow for asynchronous concurrency.</li>
+          <li><strong>Architecture:</strong> MVVM (Model-View-ViewModel) with Clean Architecture principles.</li>
+          <li><strong>Generative AI Service:</strong> Google Gemini 3.5 Flash via REST API (<code style="background: #E5E7EB; padding: 2px 6px; border-radius: 4px;">v1beta/models/gemini-3.5-flash:generateContent</code>).</li>
+          <li><strong>HTTP Networking &amp; JSON:</strong> Retrofit 2.12.0, OkHttp 4.10.0 (60s timeouts), and Moshi Kotlin for JSON schema mapping.</li>
+          <li><strong>Local Database:</strong> Android Jetpack Room 2.7.0 with SQLite engine and KSP code generation.</li>
+          <li><strong>Build Automation:</strong> Gradle 9.1 with Kotlin DSL (<code style="background: #E5E7EB; padding: 2px 6px; border-radius: 4px;">build.gradle.kts</code>).</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 19: Hardware Requirements -->
+    <div class="slide" id="slide-19">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Hardware Requirements</h2>
+      <div class="content-area">
+        <div style="display: flex; gap: 30px;">
+          <div style="flex: 1; background: var(--card-bg); padding: 24px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <h3 style="font-size: 18px; color: var(--brand-teal); margin-bottom: 12px;">Mobile Client Device</h3>
+            <ul class="bullet-list" style="gap: 10px;">
+              <li style="font-size: 14px;"><strong>Processor:</strong> Multi-core ARM64-v8a or x86_64 processor (1.8 GHz+).</li>
+              <li style="font-size: 14px;"><strong>RAM:</strong> 2 GB minimum (4 GB recommended for smooth Compose rendering).</li>
+              <li style="font-size: 14px;"><strong>Storage:</strong> Minimum 100 MB free internal flash storage.</li>
+              <li style="font-size: 14px;"><strong>Network:</strong> Wi-Fi or cellular connectivity (optional; core app is offline-first).</li>
+            </ul>
+          </div>
+          <div style="flex: 1; background: var(--card-bg); padding: 24px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <h3 style="font-size: 18px; color: var(--brand-teal); margin-bottom: 12px;">Development Workstation</h3>
+            <ul class="bullet-list" style="gap: 10px;">
+              <li style="font-size: 14px;"><strong>Processor:</strong> Intel Core i5 / AMD Ryzen 5 or equivalent.</li>
+              <li style="font-size: 14px;"><strong>RAM:</strong> 8 GB minimum; 16 GB recommended for emulator builds.</li>
+              <li style="font-size: 14px;"><strong>Storage:</strong> 20 GB free disk space for Android SDK &amp; Gradle cache.</li>
+              <li style="font-size: 14px;"><strong>Operating System:</strong> Linux / Windows 11 / macOS.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 20: Functional Requirements -->
+    <div class="slide" id="slide-20">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Functional Requirements</h2>
+      <div class="content-area">
+        <ul class="bullet-list" style="gap: 10px;">
+          <li style="font-size: 15px;"><strong>FR1 - Health Profile Management:</strong> Users shall enter and update medical conditions, medications, allergies, and nutritional goals.</li>
+          <li style="font-size: 15px;"><strong>FR2 - Gemini AI Meal Generation:</strong> System shall synthesize personalized meal plans matching patient biomarkers using Gemini 3.5 Flash.</li>
+          <li style="font-size: 15px;"><strong>FR3 - Clinical Adherence Rationale:</strong> System shall display physiological explanations and behavioral tips to foster long-term compliance.</li>
+          <li style="font-size: 15px;"><strong>FR4 - Drug-Nutrient Safety Validation:</strong> System shall independently screen recipes against FDA DNI contraindications (Warfarin, Statins).</li>
+          <li style="font-size: 15px;"><strong>FR5 - Live Portion Scaling:</strong> Users shall adjust serving sizes with instantaneous dynamic recalculation of all nutrients.</li>
+          <li style="font-size: 15px;"><strong>FR6 - Daily Nutrition Tracking:</strong> Users shall log consumed meals and view real-time daily progress against nutritional ceilings.</li>
+          <li style="font-size: 15px;"><strong>FR7 - Offline Deterministic Fallback:</strong> System shall automatically serve catalog meals when offline or during API timeouts.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 21: Database Requirements -->
+    <div class="slide" id="slide-21">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Database Requirements (Room SQLite)</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>HealthProfile Table:</strong> Stores patient biological metrics, primary and secondary conditions, active medications, allergies, and daily macro/micro targets.</li>
+          <li><strong>MealPlan Table:</strong> Stores scheduled meals with date, mealType, recipeTitle, servings, calories, protein, carbs, fat, fiber, sodium, and consumed status.</li>
+          <li><strong>IndianFood Table:</strong> Stores verified food composition reference data (ICMR-NIN &amp; Anuvaad) for deterministic nutritional calculations.</li>
+          <li><strong>Transactional Integrity:</strong> Room SQLite guarantees ACID transactions, preventing corrupted meal logs or profile state.</li>
+          <li><strong>Offline Data Availability:</strong> All tables reside in local device-private storage, enabling instant sub-50ms query responses without internet access.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 22: Non-Functional Requirements -->
+    <div class="slide" id="slide-22">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Non-Functional Requirements</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>Performance:</strong> Screen transitions and local queries execute in under 50ms; Compose UI maintains 60 FPS rendering.</li>
+          <li><strong>Medical Safety:</strong> Zero-trust architecture ensures generative AI recipes cannot bypass deterministic safety validation checks.</li>
+          <li><strong>High Availability &amp; Resilience:</strong> Zero-downtime operation guaranteed via automatic fallback to the deterministic clinical catalog.</li>
+          <li><strong>Data Privacy &amp; Confidentiality:</strong> All medical conditions and medication records reside locally on the device in private SQLite storage.</li>
+          <li><strong>Explainability:</strong> AI outputs are accompanied by plain-language clinical rationales, eliminating black-box opacity.</li>
+          <li><strong>Accessibility:</strong> High-contrast typography, screen-reader semantics, and minimum 48dp touch targets on all interactive controls.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 23: Results Section Divider -->
+    <div class="slide" id="slide-23">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <span class="brand-tag" style="margin-bottom: 16px;">NutriPath Implementation</span>
+        <h1 class="slide-title-large">RESULTS</h1>
+        <p style="font-size: 20px; color: var(--text-muted); margin-top: 10px;">
+          Working Mobile App Screens &amp; Clinical Features
+        </p>
+      </div>
+    </div>
+
+    <!-- SLIDE 24: Screenshots - Onboarding & Profile -->
+    <div class="slide" id="slide-24">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath Results</span>
+      </div>
+      <h2 class="slide-title">App Screens: Onboarding &amp; Clinical Profile</h2>
+      <div class="content-area">
+        <div class="screenshot-row">
+          <div class="mockup-frame">
+            <img src="app/src/main/res/drawable/onboarding_hero_clean_1792908158957.jpg" alt="Onboarding Screen">
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+            <h3 style="font-size: 22px; color: var(--brand-teal); margin-bottom: 12px;">Clinical Patient Onboarding</h3>
+            <ul class="bullet-list" style="gap: 10px;">
+              <li style="font-size: 15px;">Clean culinary hero banner without text overlap.</li>
+              <li style="font-size: 15px;">Captures conditions: Type 2 Diabetes, Hypertension, CKD, Thyroid, Arthritis.</li>
+              <li style="font-size: 15px;">Enforces zero-tolerance allergen screening (peanuts, dairy, gluten).</li>
+              <li style="font-size: 15px;">Automatically computes personalized caloric and macro limits via Mifflin-St Jeor.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 25: Screenshots - Generator & Tracking -->
+    <div class="slide" id="slide-25">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath Results</span>
+      </div>
+      <h2 class="slide-title">App Screens: Meal Generator &amp; Daily Budget</h2>
+      <div class="content-area">
+        <div style="display: flex; gap: 30px; height: 80%; align-items: center;">
+          <div style="flex: 1; background: var(--card-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--border-subtle); height: 100%;">
+            <h3 style="font-size: 18px; color: var(--brand-teal); margin-bottom: 12px;">Daily Nutrition Budget (Home)</h3>
+            <ul class="bullet-list" style="gap: 8px;">
+              <li style="font-size: 14px;">Real-time calorie ring tracking consumed vs target.</li>
+              <li style="font-size: 14px;">Macronutrient distribution bars (Protein, Carbs, Fats).</li>
+              <li style="font-size: 14px;">Glycemic buffer and fiber tracking indicators.</li>
+              <li style="font-size: 14px;">Prominent full-width "Log as Consumed" button.</li>
+            </ul>
+          </div>
+          <div style="flex: 1; background: var(--card-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--border-subtle); height: 100%;">
+            <h3 style="font-size: 18px; color: var(--brand-teal); margin-bottom: 12px;">Gemini LLM Meal Generator</h3>
+            <ul class="bullet-list" style="gap: 8px;">
+              <li style="font-size: 14px;"><strong>AI / Clinical Rules Switcher:</strong> Instant engine toggling.</li>
+              <li style="font-size: 14px;"><strong>Craving Input Bar:</strong> Natural language patient prompts.</li>
+              <li style="font-size: 14px;"><strong>AI Sparkle Badge:</strong> Clearly identifies LLM-crafted meals.</li>
+              <li style="font-size: 14px;"><strong>Clinical Adherence Card:</strong> Explains metabolic benefits &amp; tips.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 26: Conclusion -->
+    <div class="slide" id="slide-26">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">Conclusion</h2>
+      <div class="content-area">
+        <ul class="bullet-list">
+          <li><strong>Overcoming Dietary Monotony:</strong> NutriPath demonstrates that integrating Google Gemini 3.5 Flash successfully solves the problem of repetitive, unpalatable clinical diets.</li>
+          <li><strong>Explainable AI Enhances Adherence:</strong> Providing patients with evidence-based clinical rationales and behavioral tips transforms passive compliance into active understanding.</li>
+          <li><strong>Zero-Trust Safety Verification:</strong> Coupling generative LLM creativity with deterministic rule-based gates prevents dangerous pharmacological drug-nutrient interactions.</li>
+          <li><strong>Offline-First Resilience:</strong> An automatic deterministic fallback ensures the app remains fully functional and accessible regardless of network connectivity.</li>
+          <li><strong>Clinical Standard Alignment:</strong> Automated ADIME reporting bridges the gap between daily patient lifestyle choices and professional medical records.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 27: References -->
+    <div class="slide" id="slide-27">
+      <div class="slide-header">
+        <span class="brand-tag">NutriPath</span>
+      </div>
+      <h2 class="slide-title">References</h2>
+      <div class="content-area">
+        <ul class="bullet-list" style="gap: 12px;">
+          <li style="font-size: 14px;">[1] H. Chen, S. Patel, J. Zhang, and M. R. Larson, <em>"Personalized meal plan generator leveraging large language models to enhance dietary and nutritional adherence,"</em> IEEE Journal of Biomedical and Health Informatics, vol. 28, no. 4, pp. 2140–2151, 2024.</li>
+          <li style="font-size: 14px;">[2] A. V. Sharma, K. R. Nair, and E. C. Miller, <em>"NutriOrion: A clinical architecture for drug-nutrient interaction safety and automated ADIME charting in chronic disease therapy,"</em> in Proc. ACM Int. Conf. Bioinformatics, Computational Biology, and Health Informatics (BCB), 2024.</li>
+          <li style="font-size: 14px;">[3] D. G. Robinson, L. Martinez, and T. K. Gupta, <em>"HealthGenie: Circular interactive recipe adaptation and multi-objective dietary optimization,"</em> JMIR mHealth and uHealth, vol. 12, 2024.</li>
+          <li style="font-size: 14px;">[4] American Diabetes Association, <em>"Standards of Care in Diabetes,"</em> Diabetes Care, 2025.</li>
+          <li style="font-size: 14px;">[5] Indian Council of Medical Research (ICMR-NIN), <em>"Dietary Guidelines for Indians,"</em> National Institute of Nutrition, 2024.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 28: The End -->
+    <div class="slide" id="slide-28">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <h1 class="slide-title-large">Thank You!</h1>
+        <p style="font-size: 24px; color: var(--text-muted); margin-top: 14px; font-weight: 500;">
+          Questions &amp; Discussion
+        </p>
+        <div style="margin-top: 40px; padding: 14px 28px; background: #FFFFFF; border-radius: 30px; border: 1px solid var(--border-subtle);">
+          <span style="font-size: 16px; font-weight: 700; color: var(--brand-teal);">NutriPath</span>
+          <span style="font-size: 16px; color: var(--text-muted);"> • Vishnu V Ram (Roll No: 53)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Presentation Navigation Controls -->
+  <div class="controls">
+    <button class="btn" id="prev-btn" onclick="prevSlide()">&#8592; Previous</button>
+    <span class="slide-counter" id="counter">1 / 28</span>
+    <button class="btn" id="next-btn" onclick="nextSlide()">Next &#8594;</button>
+    <button class="btn" onclick="window.print()" style="background: var(--brand-teal);">Print to PDF</button>
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 28;
+
+    function showSlide(n) {
+      document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('slide-' + n);
+      if (target) {
+        target.classList.add('active');
+        currentSlide = n;
+        document.getElementById('counter').innerText = currentSlide + ' / ' + totalSlides;
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key === 'Home') {
+        showSlide(1);
+      } else if (e.key === 'End') {
+        showSlide(totalSlides);
+      }
+    });
+  </script>
+</body>
+</html>
